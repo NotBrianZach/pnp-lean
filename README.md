@@ -78,12 +78,17 @@ Lean `v4.36.0`, Mathlib `v4.36.0`.
   `countable_inP`, and hence `exists_not_inNP` / `exists_not_inP`: the classes are proper,
   not just nonempty. Enumerability of machines is also the prerequisite for any
   diagonalisation argument (time hierarchy, Baker–Gill–Solovay).
-- `Relativization.OTM.isPath_congr` — **oracle sensitivity**: a computation path is valid
-  under `B` iff it is valid under `B'`, whenever the two oracles agree on the strings that
-  path consults. Every oracle argument rests on this.
-- `Relativization.OTM.exists_unqueried` — **the pigeonhole**: a path of length `< 2ⁿ`
-  leaves some length-`n` string unconsulted, so the oracle can be redefined there without
-  disturbing the computation. Plus `instCountableOTM` and `Pᴮ ⊆ NPᴮ`.
+- `Relativization.OTM.Run.congr` — **oracle sensitivity**: a run under `B` is a run under
+  `B'`, whenever the two oracles agree on the strings that run consults. Every oracle
+  argument rests on this.
+- `Relativization.exists_unqueried` — **the pigeonhole**: a run consulting fewer than `2ⁿ`
+  strings leaves some length-`n` string untouched, so the oracle can be redefined there
+  without disturbing the computation. Plus `instCountableOTM` and `Pᴮ ⊆ NPᴮ`.
+- `Relativization.bgsLang_inNPRel` — **`bgsLang B ∈ NPᴮ`**, both directions, via a
+  three-state guessing machine: push a guessed bit per input cell, move right, then
+  consult the oracle on the buffer at the blank. `bgs_run` builds the accepting run by
+  induction on the remaining input (so the tape only ever moves one cell, no iterated-move
+  reasoning); `bgs_inv` inverts an arbitrary accepting run.
 
 ## Not proved, deliberately
 
@@ -96,10 +101,11 @@ Lean `v4.36.0`, Mathlib `v4.36.0`.
    cheaply the coefficient can be extracted. The essay's inclusion–exclusion takes `2ⁿ`
    evaluations; compressing those is the open question. The criterion restates the hard
    problem, it does not reduce it.
-3. **Baker–Gill–Solovay.** The infrastructure is in (`PvsNP/Oracle.lean`): the model,
-   enumerability, sensitivity, pigeonhole. Still missing: `bgsLang B ∈ NPᴮ` (needs
-   reasoning about `Tape.mk₁` under repeated right-moves), the stage construction, and —
-   for the `Pᴬ = NPᴬ` half — `PSPACE` theory.
+3. **Baker–Gill–Solovay.** The ingredients are all in (`PvsNP/Oracle.lean`): the model,
+   enumerability, sensitivity, the pigeonhole, and `bgsLang B ∈ NPᴮ`. Still missing: the
+   stage-by-stage recursion that assembles them into `∃ B, Pᴮ ≠ NPᴮ` (including the
+   bookkeeping that each stage leaves earlier stages intact), and — for the `Pᴬ = NPᴬ`
+   half — `PSPACE` theory.
 4. **`P ≠ NP`.** Not a missing lemma. Relativization (Baker–Gill–Solovay),
    natural proofs (Razborov–Rudich) and algebrization (Aaronson–Wigderson) each rule out
    a class of arguments that includes the ones sketched in the essay — in particular,

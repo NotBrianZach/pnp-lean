@@ -128,17 +128,17 @@ results are complete proofs, and the conjecture is not".
 
 /-! ### Oracle machinery -/
 
-/-- info: 'PvsNP.Relativization.OTM.isPath_congr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'PvsNP.Relativization.OTM.Run.congr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
-#print axioms PvsNP.Relativization.OTM.isPath_congr
+#print axioms PvsNP.Relativization.OTM.Run.congr
 
-/-- info: 'PvsNP.Relativization.OTM.exists_unqueried' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'PvsNP.Relativization.exists_unqueried' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
-#print axioms PvsNP.Relativization.OTM.exists_unqueried
+#print axioms PvsNP.Relativization.exists_unqueried
 
-/-- info: 'PvsNP.Relativization.OTM.accepts_of_isPath_congr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'PvsNP.Relativization.OTM.accepts_congr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
-#print axioms PvsNP.Relativization.OTM.accepts_of_isPath_congr
+#print axioms PvsNP.Relativization.OTM.accepts_congr
 
 /-- info: 'PvsNP.Relativization.instCountableOTM' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
@@ -147,3 +147,17 @@ results are complete proofs, and the conjecture is not".
 /-- info: 'PvsNP.Relativization.InPRel.inNPRel' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms PvsNP.Relativization.InPRel.inNPRel
+
+/-! ### The Baker-Gill-Solovay test language is in NP^B -/
+
+/-- info: 'PvsNP.Relativization.bgs_run' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Relativization.bgs_run
+
+/-- info: 'PvsNP.Relativization.bgs_inv' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Relativization.bgs_inv
+
+/-- info: 'PvsNP.Relativization.bgsLang_inNPRel' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Relativization.bgsLang_inNPRel

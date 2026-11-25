@@ -44,7 +44,8 @@ Everything below is proved, with no `sorry` and no axioms beyond `propext`,
   `Complexity.instCountableNTM`, `Complexity.countable_inNP`,
   `Complexity.exists_not_inNP`, `Complexity.exists_not_inP`
 * Oracle sensitivity and the pigeonhole -- the two lemmas every relativization argument
-  runs on: `Relativization.OTM.isPath_congr`, `Relativization.OTM.exists_unqueried`
+  runs on: `Relativization.OTM.Run.congr`, `Relativization.exists_unqueried`
+* The Baker-Gill-Solovay test language is in `NPᴮ`: `Relativization.bgsLang_inNPRel`
 
 ## What is *not* established, and why each gap is real
 
@@ -100,10 +101,11 @@ A formalization project on this material could, without solving anything open:
 * formalize the Baker-Gill-Solovay oracle separation, which is a self-contained
   diagonalization and would make the relativization barrier a theorem rather than a
   citation.  `PvsNP/Oracle.lean` now has the model, the enumerability
-  (`Relativization.instCountableOTM`), and the two working lemmas: oracle sensitivity
-  (`isPath_congr`) and the pigeonhole (`exists_unqueried`).  Still missing:
-  `bgsLang B ∈ NPᴮ`, the stage construction, and -- for the `Pᴬ = NPᴬ` half -- enough
-  `PSPACE` theory to know that a `PSPACE`-complete oracle collapses the two classes;
+  (`Relativization.instCountableOTM`), the two working lemmas -- oracle sensitivity
+  (`Run.congr`) and the pigeonhole (`exists_unqueried`) -- and the test language's
+  membership in `NPᴮ` (`bgsLang_inNPRel`).  Still missing: the stage construction that
+  assembles them into `∃ B, Pᴮ ≠ NPᴮ`, and -- for the `Pᴬ = NPᴬ` half -- enough `PSPACE`
+  theory to know that a `PSPACE`-complete oracle collapses the two classes;
 * formalize Razborov's monotone lower bound for clique, which is a real lower bound
   against a real circuit class.
 

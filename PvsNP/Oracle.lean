@@ -24,36 +24,37 @@ onto the buffer or clear it, and each transition may branch on the oracle's answ
 buffer's current contents.  (Consulting the oracle at every step rather than on demand
 costs nothing: building a query of length `ℓ` already takes `ℓ` steps.)
 
-Acceptance is phrased in terms of explicit computation **paths**, because that is what the
-relativization arguments reason about.
+Acceptance is phrased in terms of an inductive `Run` relation that carries the list of
+strings consulted along the way, because that list is exactly what the relativization
+arguments reason about.
 
 Main results:
 
-* `isPath_congr` : **oracle sensitivity.**  A computation path is valid under `B` iff it is
-  valid under `B'`, whenever the two oracles agree on the strings that path actually
-  consults.  Everything an oracle argument does rests on this.
-* `exists_unqueried` : **the pigeonhole.**  A path of length `< 2ⁿ` leaves some string of
-  length `n` unconsulted, so the oracle can still be redefined there without disturbing the
-  computation.
+* `Run.congr` : **oracle sensitivity.**  A run under `B` is a run under `B'`, whenever the
+  two oracles agree on the strings that run actually consults.  Everything an oracle
+  argument does rests on this.
+* `exists_unqueried` : **the pigeonhole.**  A run consulting fewer than `2ⁿ` strings leaves
+  some string of length `n` untouched, so the oracle can still be redefined there without
+  disturbing the computation.
 * `instCountableOTM` : oracle machines are finite data, so they can be enumerated.
 * `InPRel`, `InNPRel`, `InPRel.inNPRel` : the relativized classes, and `Pᴮ ⊆ NPᴮ`.
-* `bgsLang` : the language Baker-Gill-Solovay diagonalises against.
+* `bgsLang_inNPRel` : **`bgsLang B ∈ NPᴮ`**, via the three-state guessing machine
+  `bgsMachine`, proved in both directions (`bgsMachine_accepts` and `bgs_inv`).
 
 ## What is *not* here
 
-Baker-Gill-Solovay itself.  Three pieces are missing, and none of them is a detail:
+Baker-Gill-Solovay itself.  Two pieces remain:
 
-1. `bgsLang B ∈ NPᴮ`.  The machine is small -- walk the input, nondeterministically
-   pushing a guessed bit per symbol, then consult the oracle on the buffer -- but proving
-   it correct means reasoning about `Tape.mk₁` under repeated right-moves, which is not
-   done here.
-2. The stage construction for `∃ B, Pᴮ ≠ NPᴮ`: enumerate the deterministic
+1. The stage construction for `∃ B, Pᴮ ≠ NPᴮ`: enumerate the deterministic
    polynomial-time oracle machines (`instCountableOTM` makes this possible) and at stage
-   `i` use `exists_unqueried` to defeat machine `i` on some input `1ⁿ`.
-3. For the other half, `∃ A, Pᴬ = NPᴬ`: enough `PSPACE` theory to see that a
+   `i` use `exists_unqueried` to pick an unqueried string and flip the oracle there,
+   defeating machine `i`.  Every ingredient is now in this file; what is missing is the
+   recursion that assembles them, and the bookkeeping that each stage leaves earlier
+   stages intact.
+2. For the other half, `∃ A, Pᴬ = NPᴬ`: enough `PSPACE` theory to see that a
    `PSPACE`-complete oracle collapses the two classes.  This is the expensive one.
 
-No result below is stated as if any of this were done.
+No result below is stated as if either were done.
 -/
 
 namespace PvsNP.Relativization
@@ -154,42 +155,53 @@ def Accepting (B : Oracle) (c : N.Cfg) : Prop := N.Halted B c ∧ c.2.1.head = s
 
 /-- Determinism: at most one transition is ever available. -/
 def Det : Prop := ∀ q a b, (N.step q a b).card ≤ 1
+/-! ### Computation runs
 
-/-! ### Computation paths -/
+A run is recorded together with the list of strings it consults: one per configuration
+visited, in order.  Carrying the query list in the relation is what makes both the
+sensitivity lemma and the pigeonhole one-line consequences of an induction.
+-/
 
-/-- `N.IsPath B p` : consecutive configurations in `p` are related by a step of `N` under
-oracle `B`. -/
-def IsPath (B : Oracle) : List N.Cfg → Prop
-  | [] => True
-  | [_] => True
-  | c :: c' :: rest => c' ∈ N.succs B c ∧ IsPath B (c' :: rest)
+/-- `N.Run B c c' qs` : a computation from `c` to `c'` under oracle `B`, consulting exactly
+the strings `qs` (one per configuration visited, both endpoints included). -/
+inductive Run (N : OTM) (B : Oracle) : N.Cfg → N.Cfg → List (List Bool) → Prop
+  | refl (c : N.Cfg) : Run N B c c [c.2.2]
+  | step {c c' c'' : N.Cfg} {qs : List (List Bool)} :
+      c' ∈ N.succs B c → Run N B c' c'' qs → Run N B c c'' (c.2.2 :: qs)
 
-@[simp] theorem isPath_nil {B : Oracle} : N.IsPath B [] ↔ True := ⟨id, id⟩
+/-- A run of `k` steps consults `k + 1` strings, so the query list is never empty. -/
+theorem Run.length_pos {B : Oracle} {c c' : N.Cfg} {qs : List (List Bool)}
+    (r : N.Run B c c' qs) : 0 < qs.length := by
+  induction r with
+  | refl c => simp
+  | step _ _ ih => simp
 
-@[simp] theorem isPath_singleton {B : Oracle} (c : N.Cfg) : N.IsPath B [c] ↔ True := ⟨id, id⟩
+theorem Run.head_mem {B : Oracle} {c c' : N.Cfg} {qs : List (List Bool)}
+    (r : N.Run B c c' qs) : c.2.2 ∈ qs := by
+  induction r with
+  | refl c => simp
+  | step _ _ _ => simp
 
-@[simp] theorem isPath_cons₂ {B : Oracle} (c c' : N.Cfg) (rest : List N.Cfg) :
-    N.IsPath B (c :: c' :: rest) ↔ (c' ∈ N.succs B c ∧ N.IsPath B (c' :: rest)) := ⟨id, id⟩
+theorem Run.last_mem {B : Oracle} {c c' : N.Cfg} {qs : List (List Bool)}
+    (r : N.Run B c c' qs) : c'.2.2 ∈ qs := by
+  induction r with
+  | refl c => simp
+  | step _ _ ih => exact List.mem_cons_of_mem _ ih
 
-/-- The strings a path consults: one per configuration. -/
-def buffers (p : List N.Cfg) : List (List Bool) := p.map fun c => c.2.2
-
-@[simp] theorem buffers_length (p : List N.Cfg) : (N.buffers p).length = p.length :=
-  List.length_map ..
-
-@[simp] theorem buffers_cons (c : N.Cfg) (p : List N.Cfg) :
-    N.buffers (c :: p) = c.2.2 :: N.buffers p := rfl
-
-/-- `N` accepts `x` within `t` steps under `B`: there is a valid path of at most `t + 1`
-configurations from the initial one to an accepting one. -/
+/-- `N` accepts `x` within `t` steps under `B`. -/
 def Accepts (B : Oracle) (t : ℕ) (x : List Bool) : Prop :=
-  ∃ p : List N.Cfg, N.IsPath B p ∧ p.length ≤ t + 1 ∧ p.head? = some (N.init x) ∧
-    ∃ c, p.getLast? = some c ∧ N.Accepting B c
+  ∃ (c : N.Cfg) (qs : List (List Bool)),
+    N.Run B (N.init x) c qs ∧ qs.length ≤ t + 1 ∧ N.Accepting B c
+
+theorem accepts_mono {B : Oracle} {t₁ t₂ : ℕ} (h : t₁ ≤ t₂) {x : List Bool}
+    (ha : N.Accepts B t₁ x) : N.Accepts B t₂ x := by
+  obtain ⟨c, qs, hr, hlen, hacc⟩ := ha
+  exact ⟨c, qs, hr, by omega, hacc⟩
 
 /-! ### Oracle sensitivity
 
 A step depends on the oracle only through its value at the current buffer.  So two oracles
-that agree on everything a path consults cannot tell that path apart.  This is the lemma
+that agree on everything a run consults cannot tell that run apart.  This is the lemma
 every relativization argument runs on.
 -/
 
@@ -206,74 +218,59 @@ theorem accepting_congr {B B' : Oracle} (c : N.Cfg) (h : B c.2.2 = B' c.2.2) :
   simp only [Accepting, halted_congr N c h]
 
 /--
-**Oracle sensitivity.**  A path is valid under `B` exactly when it is valid under `B'`,
-provided the two oracles agree on the strings the path consults.
+**Oracle sensitivity.**  A run under `B` is a run under `B'`, provided the two oracles
+agree on the strings the run consults.  The query list is unchanged.
 -/
-theorem isPath_congr {B B' : Oracle} :
-    ∀ p : List N.Cfg, (∀ s ∈ N.buffers p, B s = B' s) → (N.IsPath B p ↔ N.IsPath B' p) := by
-  intro p
-  induction p with
-  | nil => intro _; simp
-  | cons c rest ih =>
+theorem Run.congr {B B' : Oracle} : ∀ {c c' : N.Cfg} {qs : List (List Bool)},
+    N.Run B c c' qs → (∀ s ∈ qs, B s = B' s) → N.Run B' c c' qs := by
+  intro c c' qs r
+  induction r with
+  | refl c => intro _; exact Run.refl c
+  | @step c c' c'' qs hs r ih =>
     intro h
-    cases rest with
-    | nil => simp
-    | cons c' rest' =>
-      have hb : B c.2.2 = B' c.2.2 := h _ (by simp)
-      have hrest : ∀ s ∈ N.buffers (c' :: rest'), B s = B' s := by
-        intro s hs
-        apply h s
-        rw [buffers_cons]
-        exact List.mem_cons_of_mem _ hs
-      rw [isPath_cons₂, isPath_cons₂, succs_congr N c hb, ih hrest]
+    refine Run.step ?_ (ih fun s hs' => h s (List.mem_cons_of_mem _ hs'))
+    rw [← succs_congr N c (h _ (by simp))]
+    exact hs
 
-/-- Acceptance transfers too, as long as the witnessing path's queries are respected. -/
-theorem accepts_of_isPath_congr {B B' : Oracle} {t : ℕ} {x : List Bool}
-    {p : List N.Cfg} (hp : N.IsPath B p) (hlen : p.length ≤ t + 1)
-    (hhead : p.head? = some (N.init x)) {c : N.Cfg} (hlast : p.getLast? = some c)
-    (hacc : N.Accepting B c) (h : ∀ s ∈ N.buffers p, B s = B' s) :
-    N.Accepts B' t x := by
-  refine ⟨p, (N.isPath_congr p h).1 hp, hlen, hhead, c, hlast, ?_⟩
-  refine (N.accepting_congr c ?_).1 hacc
-  exact h _ (by
-    simp only [buffers, List.mem_map]
-    exact ⟨c, List.mem_of_getLast? hlast, rfl⟩)
+/-- Acceptance transfers along `Run.congr`. -/
+theorem accepts_congr {B B' : Oracle} {t : ℕ} {x : List Bool} {c : N.Cfg}
+    {qs : List (List Bool)} (hr : N.Run B (N.init x) c qs) (hlen : qs.length ≤ t + 1)
+    (hacc : N.Accepting B c) (h : ∀ s ∈ qs, B s = B' s) : N.Accepts B' t x :=
+  ⟨c, qs, Run.congr N hr h, hlen,
+    (N.accepting_congr c (h _ (Run.last_mem N hr))).1 hacc⟩
+
+end OTM
 
 /-! ### The pigeonhole
 
-A short path cannot have looked at every string of a given length.  That is exactly the
+A short run cannot have looked at every string of a given length.  That is exactly the
 freedom a stage construction needs: it can redefine the oracle on an unconsulted string
 without disturbing the computation it has already run.
 -/
 
 /--
-**Some string of length `n` is never consulted**, as soon as the path is shorter than the
+**Some string of length `n` is never consulted**, as soon as the run is shorter than the
 number of such strings.
 -/
-theorem exists_unqueried (p : List N.Cfg) (n : ℕ) (h : p.length < 2 ^ n) :
-    ∃ w : List Bool, w.length = n ∧ w ∉ N.buffers p := by
+theorem exists_unqueried (qs : List (List Bool)) (n : ℕ) (h : qs.length < 2 ^ n) :
+    ∃ w : List Bool, w.length = n ∧ w ∉ qs := by
   classical
   by_contra hcon
   simp only [not_exists, not_and, not_not] at hcon
-  -- every length-`n` string occurs among the buffers
-  have hsub : (Finset.univ.image fun g : Fin n → Bool => List.ofFn g) ⊆
-      (N.buffers p).toFinset := by
+  have hsub : (Finset.univ.image fun g : Fin n → Bool => List.ofFn g) ⊆ qs.toFinset := by
     intro w hw
     simp only [Finset.mem_image, Finset.mem_univ, true_and] at hw
     obtain ⟨g, rfl⟩ := hw
     exact List.mem_toFinset.2 (hcon _ (List.length_ofFn ..))
-  have hcard : 2 ^ n ≤ (N.buffers p).toFinset.card := by
+  have hcard : 2 ^ n ≤ qs.toFinset.card := by
     calc 2 ^ n = (Finset.univ : Finset (Fin n → Bool)).card := by
           simp [Finset.card_univ]
       _ = (Finset.univ.image fun g : Fin n → Bool => List.ofFn g).card :=
           (Finset.card_image_of_injective _ List.ofFn_injective).symm
-      _ ≤ (N.buffers p).toFinset.card := Finset.card_le_card hsub
-  have hle : (N.buffers p).toFinset.card ≤ p.length := by
-    calc (N.buffers p).toFinset.card ≤ (N.buffers p).length := List.toFinset_card_le _
-      _ = p.length := N.buffers_length p
+      _ ≤ qs.toFinset.card := Finset.card_le_card hsub
+  have hle : qs.toFinset.card ≤ qs.length := List.toFinset_card_le _
   omega
 
-end OTM
 
 /-! ### The relativized classes -/
 
@@ -295,15 +292,239 @@ theorem InPRel.inNPRel {B : Oracle} {L : List Bool → Bool} (h : InPRel B L) :
 def PeqNPRel (B : Oracle) : Prop := ∀ L, InNPRel B L → InPRel B L
 
 open scoped Classical in
-/-- The language Baker-Gill-Solovay diagonalises against: the unary strings `1ⁿ` such that
-`B` contains *some* string of length `n`. -/
+/--
+The language Baker-Gill-Solovay diagonalises against: the strings `x` such that `B`
+contains *some* string of length `|x|`.  Membership depends only on `|x|`, which is all the
+diagonalisation uses; the textbook version restricts to unary `1ⁿ`, and dropping that
+restriction costs nothing and saves the machine a symbol check.
+-/
 noncomputable def bgsLang (B : Oracle) : List Bool → Bool := fun x =>
-  x.all id && decide (∃ w : List Bool, w.length = x.length ∧ B w = true)
+  decide (∃ w : List Bool, w.length = x.length ∧ B w = true)
 
-/-- Membership in `bgsLang` is what it looks like. -/
-theorem bgsLang_eq_true_iff (B : Oracle) (x : List Bool) :
-    bgsLang B x = true ↔
-      (∀ b ∈ x, b = true) ∧ ∃ w : List Bool, w.length = x.length ∧ B w = true := by
-  simp only [bgsLang, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true, id_eq]
+@[simp] theorem bgsLang_eq_true_iff (B : Oracle) (x : List Bool) :
+    bgsLang B x = true ↔ ∃ w : List Bool, w.length = x.length ∧ B w = true := by
+  simp only [bgsLang, decide_eq_true_eq]
+
+/-! ### The witness-guessing machine
+
+In state `0`, reading an input cell, guess a bit and push it onto the query buffer; in
+state `1`, move right and go back to state `0`.  So after `2i` steps the buffer holds `i`
+guessed bits and the head sits on cell `i`.  On reaching the blank past the input, consult
+the oracle on the buffer: if it answers yes, write `1` and halt in state `2`, which
+accepts.
+-/
+
+/-- The transition table of the guessing machine. -/
+def bgsStep : Fin 3 → Sym → Bool → Finset (Fin 3 × OStmt)
+  | ⟨0, _⟩, some _, _ => {(1, OStmt.push false), (1, OStmt.push true)}
+  | ⟨0, _⟩, none, true => {(2, OStmt.write (some true))}
+  | ⟨1, _⟩, _, _ => {(0, OStmt.move Turing.Dir.right)}
+  | _, _, _ => ∅
+
+@[simp] theorem bgsStep_zero_some (s : Bool) (o : Bool) :
+    bgsStep 0 (some s) o = {(1, OStmt.push false), (1, OStmt.push true)} := rfl
+
+@[simp] theorem bgsStep_zero_none_true :
+    bgsStep 0 none true = {(2, OStmt.write (some true))} := rfl
+
+@[simp] theorem bgsStep_zero_none_false : bgsStep 0 none false = ∅ := rfl
+
+@[simp] theorem bgsStep_one (a : Sym) (o : Bool) :
+    bgsStep 1 a o = {(0, OStmt.move Turing.Dir.right)} := rfl
+
+@[simp] theorem bgsStep_two (a : Sym) (o : Bool) : bgsStep 2 a o = ∅ := rfl
+
+/-- The machine for `bgsLang`. -/
+@[reducible] def bgsMachine : OTM where
+  size := 3
+  start := 0
+  step := bgsStep
+
+/--
+**The guessing machine accepts, on the nose.**  Given a witness `w` as long as the
+remaining input `l`, there is an accepting run of exactly `2|l| + 1` steps.  The induction
+is on `l`, so the tape only ever has to be pushed one cell to the right -- no reasoning
+about iterated moves or tape indices is needed.
+-/
+theorem bgs_run (B : Oracle) : ∀ (l w : List Bool) (L : ListBlank Sym) (buf : List Bool),
+    w.length = l.length → B (buf ++ w) = true →
+    ∃ (c : bgsMachine.Cfg) (qs : List (List Bool)),
+      bgsMachine.Run B ((0 : Fin 3), Tape.mk' L (ListBlank.mk (l.map some)), buf) c qs ∧
+      qs.length = 2 * l.length + 2 ∧ bgsMachine.Accepting B c := by
+  intro l
+  induction l with
+  | nil =>
+    intro w L buf hw hB
+    have hw0 : w = [] := List.eq_nil_of_length_eq_zero (by simpa using hw)
+    subst hw0
+    rw [List.append_nil] at hB
+    have hhead : (Tape.mk' L (ListBlank.mk ([] : List Sym))).head = none := rfl
+    refine ⟨((2 : Fin 3),
+      (Tape.mk' L (ListBlank.mk ([] : List Sym))).write (some true), buf), _,
+      OTM.Run.step ?_ (OTM.Run.refl _), by simp, ?_, rfl⟩
+    · refine ⟨((2 : Fin 3), OStmt.write (some true)), ?_, rfl⟩
+      have hstep : bgsMachine.step 0
+          (Tape.mk' L (ListBlank.mk (([] : List Bool).map some))).head (B buf)
+          = {((2 : Fin 3), OStmt.write (some true))} := by
+        simp only [List.map_nil, hhead, hB]
+        rfl
+      rw [hstep]
+      exact Finset.mem_singleton_self _
+    · rfl
+  | cons a l' ih =>
+    intro w L buf hw hB
+    obtain ⟨b, w', rfl⟩ : ∃ b w', w = b :: w' := by
+      cases w with
+      | nil => simp at hw
+      | cons b w' => exact ⟨b, w', rfl⟩
+    have hhead : (Tape.mk' L (ListBlank.mk ((a :: l').map some))).head = some a := by simp
+    have hB' : B ((buf ++ [b]) ++ w') = true := by
+      rw [List.append_assoc]; simpa using hB
+    obtain ⟨c, qs, hrun, hqs, hacc⟩ :=
+      ih w' (ListBlank.cons (some a) L) (buf ++ [b]) (by simpa using hw) hB'
+    have hmove : (Tape.mk' L (ListBlank.mk ((a :: l').map some))).move Turing.Dir.right =
+        Tape.mk' (ListBlank.cons (some a) L) (ListBlank.mk (l'.map some)) := by
+      simp
+    refine ⟨c, buf :: (buf ++ [b]) :: qs,
+      OTM.Run.step
+          (c' := ((1 : Fin 3), Tape.mk' L (ListBlank.mk ((a :: l').map some)), buf ++ [b]))
+          ?_
+          (OTM.Run.step
+            (c' := ((0 : Fin 3),
+              Tape.mk' (ListBlank.cons (some a) L) (ListBlank.mk (l'.map some)), buf ++ [b]))
+            ?_ hrun), ?_, hacc⟩
+    · refine ⟨((1 : Fin 3), OStmt.push b), ?_, rfl⟩
+      have hstep : bgsMachine.step 0
+          (Tape.mk' L (ListBlank.mk ((a :: l').map some))).head (B buf)
+          = {((1 : Fin 3), OStmt.push false), ((1 : Fin 3), OStmt.push true)} := by
+        rw [hhead]; rfl
+      rw [hstep]
+      cases b <;> simp
+    · refine ⟨((0 : Fin 3), OStmt.move Turing.Dir.right), ?_, ?_⟩
+      · have hstep : bgsMachine.step 1
+            (Tape.mk' L (ListBlank.mk ((a :: l').map some))).head (B (buf ++ [b]))
+            = {((0 : Fin 3), OStmt.move Turing.Dir.right)} := rfl
+        rw [hstep]
+        exact Finset.mem_singleton_self _
+      · simp only [OTM.act]
+        rw [hmove]
+    · simp only [List.length_cons, hqs, List.length_cons]
+      omega
+
+/--
+**The converse: only members are accepted.**  Inverting an accepting run.  The two clauses
+are the invariants for the two live states: in state `0` the machine still has to guess a
+bit for the current cell, in state `1` it has already pushed one.
+-/
+theorem bgsMachine_not_halted_one (B : Oracle) (T : Tape Sym) (buf : List Bool) :
+    ¬ bgsMachine.Halted B ((1 : Fin 3), T, buf) := by
+  intro h
+  have h' : bgsMachine.step 1 T.head (B buf) = ∅ := h
+  have hm : ((0 : Fin 3), OStmt.move Turing.Dir.right) ∈ bgsMachine.step 1 T.head (B buf) :=
+    Finset.mem_singleton_self _
+  rw [h'] at hm
+  exact absurd hm (Finset.notMem_empty _)
+
+theorem bgsMachine_not_halted_zero (B : Oracle) (T : Tape Sym) (buf : List Bool) (s : Bool)
+    (hs : T.head = some s) : ¬ bgsMachine.Halted B ((0 : Fin 3), T, buf) := by
+  intro h
+  have h' : bgsMachine.step 0 T.head (B buf) = ∅ := h
+  rw [hs] at h'
+  have hm : ((1 : Fin 3), OStmt.push false) ∈ bgsMachine.step 0 (some s) (B buf) := by
+    simp [bgsMachine]
+  rw [h'] at hm
+  exact absurd hm (Finset.notMem_empty _)
+
+theorem bgs_inv (B : Oracle) : ∀ {c₀ c : bgsMachine.Cfg} {qs : List (List Bool)},
+    bgsMachine.Run B c₀ c qs → bgsMachine.Accepting B c →
+      ∀ (L : ListBlank Sym) (l buf : List Bool),
+        (c₀ = ((0 : Fin 3), Tape.mk' L (ListBlank.mk (l.map some)), buf) →
+          ∃ w, w.length = l.length ∧ B (buf ++ w) = true) ∧
+        (c₀ = ((1 : Fin 3), Tape.mk' L (ListBlank.mk (l.map some)), buf) →
+          ∃ w, w.length = l.length - 1 ∧ B (buf ++ w) = true) := by
+  intro c₀ c qs r
+  induction r with
+  | refl c₀ =>
+    -- an accepting configuration is halted, and states `0` and `1` are not
+    intro hacc L l buf
+    constructor
+    · intro h0
+      exfalso
+      rw [h0] at hacc
+      exact bgsMachine_not_halted_zero B _ buf true hacc.2 hacc.1
+    · intro h1
+      exfalso
+      rw [h1] at hacc
+      exact bgsMachine_not_halted_one B _ buf hacc.1
+  | @step c₁ c₂ c₃ qs' hs r' ih =>
+    intro hacc L l buf
+    refine ⟨fun h0 => ?_, fun h1 => ?_⟩
+    · subst h0
+      obtain ⟨y, hy, rfl⟩ := hs
+      cases l with
+      | nil =>
+        -- at the blank: a step exists only if the oracle said yes
+        refine ⟨[], by simp, ?_⟩
+        rw [List.append_nil]
+        by_cases hB : B buf = true
+        · exact hB
+        · exfalso
+          have hB0 : B buf = false := by simpa using hB
+          have h' : y ∈ bgsMachine.step 0
+              (Tape.mk' L (ListBlank.mk (([] : List Bool).map some))).head (B buf) := hy
+          rw [show (Tape.mk' L (ListBlank.mk (([] : List Bool).map some))).head = none from rfl,
+            hB0] at h'
+          simp [bgsMachine] at h'
+      | cons a l' =>
+        -- guess a bit, landing in state `1`
+        have hhd : (Tape.mk' L (ListBlank.mk ((a :: l').map some))).head = some a := by simp
+        have h' : y ∈ bgsMachine.step 0 (some a) (B buf) := by rw [← hhd]; exact hy
+        obtain ⟨b, rfl⟩ : ∃ b, y = ((1 : Fin 3), OStmt.push b) := by
+          simp only [bgsMachine, bgsStep_zero_some, Finset.mem_insert,
+            Finset.mem_singleton] at h'
+          rcases h' with rfl | rfl
+          · exact ⟨false, rfl⟩
+          · exact ⟨true, rfl⟩
+        obtain ⟨w, hwlen, hwB⟩ := (ih hacc L (a :: l') (buf ++ [b])).2 rfl
+        refine ⟨b :: w, by simp at hwlen ⊢; omega, ?_⟩
+        rw [show buf ++ b :: w = (buf ++ [b]) ++ w by simp]
+        exact hwB
+    · subst h1
+      obtain ⟨y, hy, rfl⟩ := hs
+      obtain rfl : y = ((0 : Fin 3), OStmt.move Turing.Dir.right) := by
+        have h' : y ∈ bgsMachine.step 1
+            (Tape.mk' L (ListBlank.mk (l.map some))).head (B buf) := hy
+        simpa [bgsMachine] using h'
+      cases l with
+      | nil =>
+        obtain ⟨w, hwlen, hwB⟩ :=
+          (ih hacc (ListBlank.cons (default : Sym) L) [] buf).1 rfl
+        exact ⟨w, by simpa using hwlen, hwB⟩
+      | cons a l' =>
+        obtain ⟨w, hwlen, hwB⟩ :=
+          (ih hacc (ListBlank.cons (some a) L) l' buf).1 rfl
+        exact ⟨w, by simpa using hwlen, hwB⟩
+
+/-- **One direction of `bgsLang B ∈ NPᴮ`**: every member is accepted inside the bound. -/
+theorem bgsMachine_accepts (B : Oracle) (x : List Bool) (h : bgsLang B x = true) :
+    bgsMachine.Accepts B (polyBound 1 2 x.length) x := by
+  obtain ⟨w, hwlen, hBw⟩ := (bgsLang_eq_true_iff B x).1 h
+  obtain ⟨c, qs, hrun, hqs, hacc⟩ :=
+    bgs_run B x w (ListBlank.mk []) [] hwlen (by simpa using hBw)
+  refine ⟨c, qs, hrun, ?_, hacc⟩
+  rw [hqs]
+  simp only [polyBound, pow_one]
+  omega
+
+/--
+**`bgsLang B ∈ NPᴮ`.**  The guessing machine decides it within the bound
+`2(n+1) + 2`, in both directions.
+-/
+theorem bgsLang_inNPRel (B : Oracle) : InNPRel B (bgsLang B) := by
+  refine ⟨bgsMachine, 1, 2, fun x => ⟨bgsMachine_accepts B x, ?_⟩⟩
+  rintro ⟨c, qs, hrun, -, hacc⟩
+  rw [bgsLang_eq_true_iff]
+  obtain ⟨w, hwlen, hwB⟩ := (bgs_inv B hrun hacc (ListBlank.mk []) x []).1 rfl
+  exact ⟨w, hwlen, by simpa using hwB⟩
 
 end PvsNP.Relativization
