@@ -3,6 +3,7 @@ Copyright (c) 2026. Released under Apache 2.0.
 -/
 import PvsNP.Complexity
 import PvsNP.Enumeration
+import PvsNP.Oracle
 import PvsNP.ExactCover
 import PvsNP.Inventory
 import PvsNP.Matching
@@ -42,6 +43,8 @@ Everything below is proved, with no `sorry` and no axioms beyond `propext`,
 * A machine is finite data, so `P` and `NP` are countable and therefore proper:
   `Complexity.instCountableNTM`, `Complexity.countable_inNP`,
   `Complexity.exists_not_inNP`, `Complexity.exists_not_inP`
+* Oracle sensitivity and the pigeonhole -- the two lemmas every relativization argument
+  runs on: `Relativization.OTM.isPath_congr`, `Relativization.OTM.exists_unqueried`
 
 ## What is *not* established, and why each gap is real
 
@@ -96,10 +99,11 @@ A formalization project on this material could, without solving anything open:
 * finish item 1 (an encoding plus a cost model, giving a formal NP-completeness theorem);
 * formalize the Baker-Gill-Solovay oracle separation, which is a self-contained
   diagonalization and would make the relativization barrier a theorem rather than a
-  citation.  The prerequisite is in place: `Complexity.instCountableNTM` says machines are
-  finite data, so they can be enumerated.  What is still missing is an oracle-machine
-  model, a stage construction, and -- for the `Pᴬ = NPᴬ` half -- enough `PSPACE` theory to
-  know that a `PSPACE`-complete oracle collapses the two classes;
+  citation.  `PvsNP/Oracle.lean` now has the model, the enumerability
+  (`Relativization.instCountableOTM`), and the two working lemmas: oracle sensitivity
+  (`isPath_congr`) and the pigeonhole (`exists_unqueried`).  Still missing:
+  `bgsLang B ∈ NPᴮ`, the stage construction, and -- for the `Pᴬ = NPᴬ` half -- enough
+  `PSPACE` theory to know that a `PSPACE`-complete oracle collapses the two classes;
 * formalize Razborov's monotone lower bound for clique, which is a real lower bound
   against a real circuit class.
 

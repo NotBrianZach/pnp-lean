@@ -33,6 +33,7 @@ Lean `v4.36.0`, Mathlib `v4.36.0`.
 | `PvsNP/Determinant.lean` | The general-`n` tagged determinant: its `z₁⋯zₙ` coefficient is nonzero iff a 3D matching exists |
 | `PvsNP/Complexity.lean` | Nondeterministic Post-Turing machines; definitions of `P` and `NP`; `P ⊆ NP` |
 | `PvsNP/Enumeration.lean` | Machines are finite data: `Countable NTM`, so `P` and `NP` are countable and proper |
+| `PvsNP/Oracle.lean` | Oracle machines, relativized `Pᴮ`/`NPᴮ`, and the two lemmas every relativization argument runs on |
 | `PvsNP/Conjecture.lean` | `P ≠ NP` stated, **not proved**, plus a written account of the barriers |
 | `PvsNP/Audit.lean` | `#guard_msgs` over `#print axioms`: machine-checks which results are hole-free |
 
@@ -77,6 +78,12 @@ Lean `v4.36.0`, Mathlib `v4.36.0`.
   `countable_inP`, and hence `exists_not_inNP` / `exists_not_inP`: the classes are proper,
   not just nonempty. Enumerability of machines is also the prerequisite for any
   diagonalisation argument (time hierarchy, Baker–Gill–Solovay).
+- `Relativization.OTM.isPath_congr` — **oracle sensitivity**: a computation path is valid
+  under `B` iff it is valid under `B'`, whenever the two oracles agree on the strings that
+  path consults. Every oracle argument rests on this.
+- `Relativization.OTM.exists_unqueried` — **the pigeonhole**: a path of length `< 2ⁿ`
+  leaves some length-`n` string unconsulted, so the oracle can be redefined there without
+  disturbing the computation. Plus `instCountableOTM` and `Pᴮ ⊆ NPᴮ`.
 
 ## Not proved, deliberately
 
@@ -89,7 +96,11 @@ Lean `v4.36.0`, Mathlib `v4.36.0`.
    cheaply the coefficient can be extracted. The essay's inclusion–exclusion takes `2ⁿ`
    evaluations; compressing those is the open question. The criterion restates the hard
    problem, it does not reduce it.
-3. **`P ≠ NP`.** Not a missing lemma. Relativization (Baker–Gill–Solovay),
+3. **Baker–Gill–Solovay.** The infrastructure is in (`PvsNP/Oracle.lean`): the model,
+   enumerability, sensitivity, pigeonhole. Still missing: `bgsLang B ∈ NPᴮ` (needs
+   reasoning about `Tape.mk₁` under repeated right-moves), the stage construction, and —
+   for the `Pᴬ = NPᴬ` half — `PSPACE` theory.
+4. **`P ≠ NP`.** Not a missing lemma. Relativization (Baker–Gill–Solovay),
    natural proofs (Razborov–Rudich) and algebrization (Aaronson–Wigderson) each rule out
    a class of arguments that includes the ones sketched in the essay — in particular,
    algebrization bears directly on the determinant route, since that route is exactly an

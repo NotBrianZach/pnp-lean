@@ -125,3 +125,25 @@ results are complete proofs, and the conjecture is not".
 /-- info: 'PvsNP.Complexity.exists_not_inP' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms PvsNP.Complexity.exists_not_inP
+
+/-! ### Oracle machinery -/
+
+/-- info: 'PvsNP.Relativization.OTM.isPath_congr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Relativization.OTM.isPath_congr
+
+/-- info: 'PvsNP.Relativization.OTM.exists_unqueried' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Relativization.OTM.exists_unqueried
+
+/-- info: 'PvsNP.Relativization.OTM.accepts_of_isPath_congr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Relativization.OTM.accepts_of_isPath_congr
+
+/-- info: 'PvsNP.Relativization.instCountableOTM' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Relativization.instCountableOTM
+
+/-- info: 'PvsNP.Relativization.InPRel.inNPRel' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Relativization.InPRel.inNPRel
