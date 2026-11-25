@@ -17,7 +17,7 @@ halted configuration whose head symbol is `1`.
 
 * `InNP L` : some machine accepts exactly `L`, within a bound polynomial in `|x|`.
 * `InP L`  : the same, with the extra requirement that the machine is **deterministic**
-  (every transition set is a subsingleton).
+  (at most one transition is available at any state and symbol).
 
 For a deterministic machine the acceptance predicate `Accepts N t x` is itself decidable
 by simulating at most `t` steps, so `InP` is the usual deterministic polynomial time, and
@@ -44,20 +44,22 @@ open Turing
 abbrev Sym := Option Bool
 
 /--
-A nondeterministic Post-Turing machine: a finite state type, a start state, and a
-transition relation.  `step q a = ∅` means "halt".
+A nondeterministic Post-Turing machine: finitely many states `Fin size`, a start state,
+and a transition relation given by a finite set of options for each (state, symbol).
+`step q a = ∅` means "halt".
+
+The states are `Fin size` rather than an arbitrary finite type on purpose.  It costs
+nothing in expressiveness, and it makes an `NTM` a piece of *finite data*: `NTM` lands in
+`Type`, and `Countable NTM` holds (`PvsNP/Enumeration.lean`).  Any diagonalisation
+argument -- Baker-Gill-Solovay, time hierarchy -- needs that.
 -/
 structure NTM where
-  /-- The state type. -/
-  State : Type
-  /-- The state type is finite: this is a genuine finite-control machine. -/
-  finState : Fintype State
+  /-- The number of states. -/
+  size : ℕ
   /-- The initial state. -/
-  start : State
+  start : Fin size
   /-- The transition relation. -/
-  step : State → Sym → Set (State × TM0.Stmt Sym)
-
-attribute [instance] NTM.finState
+  step : Fin size → Sym → Finset (Fin size × TM0.Stmt Sym)
 
 namespace NTM
 
@@ -69,7 +71,7 @@ def act : TM0.Stmt Sym → Tape Sym → Tape Sym
 variable (N : NTM)
 
 /-- A configuration: current state together with the tape. -/
-def Cfg : Type := N.State × Tape Sym
+def Cfg : Type := Fin N.size × Tape Sym
 
 /-- The starting configuration on input `x`, written as a list of bits on a blank tape. -/
 def init (x : List Bool) : N.Cfg := (N.start, Tape.mk₁ (x.map some))
@@ -100,7 +102,7 @@ def Accepts (t : ℕ) (x : List Bool) : Prop :=
   ∃ c, N.ReachesIn t (N.init x) c ∧ N.Accepting c
 
 /-- Determinism: at most one transition is available at any (state, symbol). -/
-def Det : Prop := ∀ q a, (N.step q a).Subsingleton
+def Det : Prop := ∀ q a, (N.step q a).card ≤ 1
 
 theorem reachesIn_refl (t : ℕ) (c : N.Cfg) : N.ReachesIn t c c := by
   cases t with
@@ -170,54 +172,47 @@ Two sanity checks, so that `InP` is not accidentally empty and `InNP` not accide
 everything.
 -/
 
-/-- The machine that writes `1` and halts. -/
-def yesMachine : NTM where
-  State := Bool
-  finState := inferInstance
-  start := false
-  step := fun q _ => if q = false then {(true, TM0.Stmt.write (some true))} else ∅
+/-- The machine that writes `1` and halts: from state `0` it writes `1` and moves to
+state `1`, where it has no transition. -/
+@[reducible] def yesMachine : NTM where
+  size := 2
+  start := 0
+  step := fun q _ => if q = 0 then {(1, TM0.Stmt.write (some true))} else ∅
 
 theorem yesMachine_det : yesMachine.Det := by
   intro q a
-  cases q with
-  | false =>
-    intro x hx y hy
-    have hx' : x = (true, TM0.Stmt.write (some true)) := hx
-    have hy' : y = (true, TM0.Stmt.write (some true)) := hy
-    rw [hx', hy']
-  | true => intro x hx; exact (hx : False).elim
+  by_cases hq : q = 0 <;> simp [yesMachine, hq]
 
 /-- The always-true language is in `P`. -/
 theorem inP_const_true : InP (fun _ => true) := by
   refine ⟨yesMachine, 0, 1, yesMachine_det, fun x => ?_⟩
   refine ⟨fun _ => ?_, fun _ => rfl⟩
-  have hstep : (true, TM0.Stmt.write (some true)) ∈
-      yesMachine.step yesMachine.start (Tape.mk₁ (x.map some)).head := rfl
+  have hstep : ((1 : Fin 2), TM0.Stmt.write (some true)) ∈
+      yesMachine.step yesMachine.start (Tape.mk₁ (x.map some)).head := by
+    exact Finset.mem_singleton_self _
   refine NTM.accepts_mono _ (show 1 ≤ polyBound 0 1 x.length by simp [polyBound]) ?_
-  refine ⟨(true, (Tape.mk₁ (x.map some)).write (some true)), ?_, ?_, rfl⟩
+  refine ⟨((1 : Fin 2), (Tape.mk₁ (x.map some)).write (some true)), ?_, ?_, rfl⟩
   · exact Or.inr ⟨_, ⟨_, hstep, rfl⟩, rfl⟩
-  · change yesMachine.step true _ = ∅
-    rfl
+  · change yesMachine.step 1 _ = ∅
+    simp [yesMachine]
 
 /-- The machine that overwrites with a blank forever: it never halts, so it never
 accepts. -/
-def noMachine : NTM where
-  State := Bool
-  finState := inferInstance
-  start := false
-  step := fun _ _ => {(false, TM0.Stmt.write none)}
+@[reducible] def noMachine : NTM where
+  size := 1
+  start := 0
+  step := fun _ _ => {(0, TM0.Stmt.write none)}
 
 theorem noMachine_det : noMachine.Det := by
-  intro q a x hx y hy
-  have hx' : x = (false, TM0.Stmt.write none) := hx
-  have hy' : y = (false, TM0.Stmt.write none) := hy
-  rw [hx', hy']
+  intro q a
+  simp [noMachine]
 
 theorem noMachine_never_accepts (t : ℕ) (x : List Bool) : ¬ noMachine.Accepts t x := by
   rintro ⟨c, -, hhalt, -⟩
-  have hmem : (false, TM0.Stmt.write none) ∈ noMachine.step c.1 c.2.head := rfl
+  have hmem : ((0 : Fin 1), TM0.Stmt.write none) ∈ noMachine.step c.1 c.2.head :=
+    Finset.mem_singleton_self _
   rw [hhalt] at hmem
-  exact absurd hmem (Set.notMem_empty _)
+  exact absurd hmem (Finset.notMem_empty _)
 
 /-- The always-false language is in `P`. -/
 theorem inP_const_false : InP (fun _ => false) := by

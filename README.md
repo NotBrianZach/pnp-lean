@@ -32,6 +32,7 @@ Lean `v4.36.0`, Mathlib `v4.36.0`.
 | `PvsNP/Matching.lean` | The colored square: no 3D matching, yet all three pairwise projections match; `r² − b²` |
 | `PvsNP/Determinant.lean` | The general-`n` tagged determinant: its `z₁⋯zₙ` coefficient is nonzero iff a 3D matching exists |
 | `PvsNP/Complexity.lean` | Nondeterministic Post-Turing machines; definitions of `P` and `NP`; `P ⊆ NP` |
+| `PvsNP/Enumeration.lean` | Machines are finite data: `Countable NTM`, so `P` and `NP` are countable and proper |
 | `PvsNP/Conjecture.lean` | `P ≠ NP` stated, **not proved**, plus a written account of the barriers |
 | `PvsNP/Audit.lean` | `#guard_msgs` over `#print axioms`: machine-checks which results are hole-free |
 
@@ -70,6 +71,12 @@ Lean `v4.36.0`, Mathlib `v4.36.0`.
   general theorem.
 - `Complexity.InP.inNP` — `P ⊆ NP` in the model defined here.
 - `Complexity.inP_const_true` / `inP_const_false` — the definitions are not empty.
+- `Complexity.instCountableNTM` — a machine is finite data (`size`, `start`, and a finite
+  transition table), so `NTM` is a countable type. With
+  `Complexity.uncountable_lang` (Cantor) this gives `Complexity.countable_inNP`,
+  `countable_inP`, and hence `exists_not_inNP` / `exists_not_inP`: the classes are proper,
+  not just nonempty. Enumerability of machines is also the prerequisite for any
+  diagonalisation argument (time hierarchy, Baker–Gill–Solovay).
 
 ## Not proved, deliberately
 
@@ -91,8 +98,9 @@ Lean `v4.36.0`, Mathlib `v4.36.0`.
 ## Modelling caveats
 
 `P` and `NP` are defined over single-tape nondeterministic Post-Turing machines with
-alphabet `{blank, 0, 1}`, with acceptance meaning "some path of length ≤ `c·(n+1)^k + c`
-reaches a halted configuration showing `1`". Two standard facts are used informally and
+states `Fin size` and a finite transition table, alphabet `{blank, 0, 1}`, with acceptance
+meaning "some path of length ≤ `c·(n+1)^k + c` reaches a halted configuration showing
+`1`". Two standard facts are used informally and
 are **not** theorems here: that this model is polynomially equivalent to multi-tape Turing
 machines, and that nondeterministic polynomial time coincides with the
 verifier/certificate definition of NP. Anything claimed about the Clay problem rather than

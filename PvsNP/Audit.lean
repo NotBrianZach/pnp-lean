@@ -103,3 +103,25 @@ results are complete proofs, and the conjecture is not".
 /-- info: 'PvsNP.Determinant.ColoredSquare.coeff_eq_zero' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms PvsNP.Determinant.ColoredSquare.coeff_eq_zero
+
+/-! ### Machines are finite data; the classes are proper -/
+
+/-- info: 'PvsNP.Complexity.instCountableNTM' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Complexity.instCountableNTM
+
+/-- info: 'PvsNP.Complexity.uncountable_lang' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Complexity.uncountable_lang
+
+/-- info: 'PvsNP.Complexity.countable_inNP' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Complexity.countable_inNP
+
+/-- info: 'PvsNP.Complexity.exists_not_inNP' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Complexity.exists_not_inNP
+
+/-- info: 'PvsNP.Complexity.exists_not_inP' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Complexity.exists_not_inP
