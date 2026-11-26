@@ -84,6 +84,13 @@ Lean `v4.36.0`, Mathlib `v4.36.0`.
 - `Relativization.exists_unqueried` — **the pigeonhole**: a run consulting fewer than `2ⁿ`
   strings leaves some length-`n` string untouched, so the oracle can be redefined there
   without disturbing the computation. Plus `instCountableOTM` and `Pᴮ ⊆ NPᴮ`.
+- `Relativization.OTM.not_accepts_congr` — **the diagonalisation step**: a *deterministic*
+  machine that rejects still rejects after the oracle is changed away from the strings its
+  own trajectory consults. Sensitivity alone doesn't give this (an accepting run under the
+  new oracle might be exactly one that queries the changed string); ruling that out is
+  what determinism buys, via a functional trajectory (`nextCfg`, `traj`, `qlist`,
+  legitimised under `Det` by `mem_succs_iff`). `exists_flip` packages a whole stage, and
+  `exists_enumeration` lists the candidates.
 - `Relativization.bgsLang_inNPRel` — **`bgsLang B ∈ NPᴮ`**, both directions, via a
   three-state guessing machine: push a guessed bit per input cell, move right, then
   consult the oracle on the buffer at the blank. `bgs_run` builds the accepting run by
@@ -101,11 +108,12 @@ Lean `v4.36.0`, Mathlib `v4.36.0`.
    cheaply the coefficient can be extracted. The essay's inclusion–exclusion takes `2ⁿ`
    evaluations; compressing those is the open question. The criterion restates the hard
    problem, it does not reduce it.
-3. **Baker–Gill–Solovay.** The ingredients are all in (`PvsNP/Oracle.lean`): the model,
-   enumerability, sensitivity, the pigeonhole, and `bgsLang B ∈ NPᴮ`. Still missing: the
-   stage-by-stage recursion that assembles them into `∃ B, Pᴮ ≠ NPᴮ` (including the
-   bookkeeping that each stage leaves earlier stages intact), and — for the `Pᴬ = NPᴬ`
-   half — `PSPACE` theory.
+3. **Baker–Gill–Solovay.** Every ingredient is in (`PvsNP/Oracle.lean`): the model,
+   enumerability, sensitivity, the pigeonhole, `bgsLang B ∈ NPᴮ`, and one complete
+   diagonalisation stage (`exists_flip`). Still missing: the recursion that *runs* the
+   stages. Its bookkeeping is lengths `n 0 < n 1 < ⋯` with stage `i`'s budget `tᵢ`
+   satisfying `tᵢ + 1 < 2^(n i)` and `n (i+1) > tᵢ`, so stage `i`'s queries all fall below
+   what later stages touch. And — for the `Pᴬ = NPᴬ` half — `PSPACE` theory.
 4. **`P ≠ NP`.** Not a missing lemma. Relativization (Baker–Gill–Solovay),
    natural proofs (Razborov–Rudich) and algebrization (Aaronson–Wigderson) each rule out
    a class of arguments that includes the ones sketched in the essay — in particular,

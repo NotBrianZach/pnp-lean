@@ -40,17 +40,27 @@ Main results:
 * `InPRel`, `InNPRel`, `InPRel.inNPRel` : the relativized classes, and `Pᴮ ⊆ NPᴮ`.
 * `bgsLang_inNPRel` : **`bgsLang B ∈ NPᴮ`**, via the three-state guessing machine
   `bgsMachine`, proved in both directions (`bgsMachine_accepts` and `bgs_inv`).
+* `not_accepts_congr` : **the diagonalisation step.**  A *deterministic* machine that
+  rejects still rejects after the oracle is changed away from the strings its own
+  trajectory consults.  Sensitivity alone does not give this -- an accepting run under the
+  new oracle might be exactly one that queries the changed string -- and ruling that out
+  is what determinism buys.  To use it, the step relation is turned into a function
+  (`nextCfg`, `traj`, `qlist`, legitimate under `Det` by `mem_succs_iff`).
+* `exists_flip` : the two halves of a stage combined -- an unconsulted string of length `n`
+  exists, and flipping the oracle there preserves rejection.
+* `exists_enumeration` : the candidates can be listed.
 
 ## What is *not* here
 
 Baker-Gill-Solovay itself.  Two pieces remain:
 
-1. The stage construction for `∃ B, Pᴮ ≠ NPᴮ`: enumerate the deterministic
-   polynomial-time oracle machines (`instCountableOTM` makes this possible) and at stage
-   `i` use `exists_unqueried` to pick an unqueried string and flip the oracle there,
-   defeating machine `i`.  Every ingredient is now in this file; what is missing is the
-   recursion that assembles them, and the bookkeeping that each stage leaves earlier
-   stages intact.
+1. The stage recursion for `∃ B, Pᴮ ≠ NPᴮ`.  Each individual stage is now a theorem
+   (`exists_flip`), and the candidates can be enumerated (`exists_enumeration`), but the
+   recursion that runs the stages is not written.  The bookkeeping it needs: lengths
+   `n 0 < n 1 < ⋯` chosen so that stage `i`'s budget `tᵢ` satisfies `tᵢ + 1 < 2 ^ n i` and
+   `n (i+1) > tᵢ`, so that stage `i`'s queries are all shorter than anything later stages
+   touch, and the final oracle therefore agrees with the stage-`i` partial oracle on
+   exactly the strings stage `i` looked at.
 2. For the other half, `∃ A, Pᴬ = NPᴬ`: enough `PSPACE` theory to see that a
    `PSPACE`-complete oracle collapses the two classes.  This is the expensive one.
 
@@ -125,6 +135,14 @@ theorem OTM.data_injective : Function.Injective OTM.data := by
 
 /-- **Oracle machines are finite data too**, so a stage construction can enumerate them. -/
 instance instCountableOTM : Countable OTM := OTM.data_injective.countable
+
+/-- A machine with one state and no transitions. -/
+instance instNonemptyOTM : Nonempty OTM := ⟨⟨1, 0, fun _ _ _ => ∅⟩⟩
+
+/-- The candidates a stage construction has to defeat -- a machine together with its
+polynomial bound -- can be listed. -/
+theorem exists_enumeration : ∃ e : ℕ → OTM × ℕ × ℕ, Function.Surjective e :=
+  exists_surjective_nat _
 
 namespace OTM
 
@@ -238,6 +256,184 @@ theorem accepts_congr {B B' : Oracle} {t : ℕ} {x : List Bool} {c : N.Cfg}
     (hacc : N.Accepting B c) (h : ∀ s ∈ qs, B s = B' s) : N.Accepts B' t x :=
   ⟨c, qs, Run.congr N hr h, hlen,
     (N.accepting_congr c (h _ (Run.last_mem N hr))).1 hacc⟩
+
+/-! ### Deterministic trajectories
+
+The diagonalisation needs more than sensitivity: it needs to know that a *deterministic*
+machine which **fails** to accept still fails after the oracle is changed away from its own
+queries.  Sensitivity alone does not give this, because an accepting run under the new
+oracle might be one that queries the changed string.  Determinism is what rules that out,
+and to exploit it we turn the step relation into a function.
+-/
+
+/-- The unique successor of a configuration, when there is one.  (For a nondeterministic
+machine this picks an arbitrary option; every lemma below about it assumes `Det`.) -/
+noncomputable def nextCfg (B : Oracle) (c : N.Cfg) : Option N.Cfg :=
+  if h : (N.step c.1 c.2.1.head (B c.2.2)).Nonempty then
+    some (h.choose.1, act h.choose.2 c.2)
+  else none
+
+/-- Whatever `nextCfg` picks really is a successor; no determinism needed. -/
+theorem mem_succs_of_nextCfg (B : Oracle) (c c' : N.Cfg)
+    (h : N.nextCfg B c = some c') : c' ∈ N.succs B c := by
+  rw [nextCfg] at h
+  split at h
+  · rename_i hne
+    exact ⟨hne.choose, hne.choose_spec, (Option.some.inj h).symm⟩
+  · exact absurd h (by simp)
+
+/-- For a deterministic machine, `nextCfg` *is* the step relation. -/
+theorem mem_succs_iff (hdet : N.Det) (B : Oracle) (c c' : N.Cfg) :
+    c' ∈ N.succs B c ↔ N.nextCfg B c = some c' := by
+  refine ⟨?_, N.mem_succs_of_nextCfg B c c'⟩
+  rintro ⟨y, hy, rfl⟩
+  have hne : (N.step c.1 c.2.1.head (B c.2.2)).Nonempty := ⟨y, hy⟩
+  rw [nextCfg, dite_eq_left hne]
+  have hch : hne.choose = y :=
+    Finset.card_le_one.1 (hdet _ _ _) _ hne.choose_spec _ hy
+  rw [hch]
+
+/-- The configuration after at most `t` steps, standing still once halted. -/
+noncomputable def traj (B : Oracle) : ℕ → N.Cfg → N.Cfg
+  | 0, c => c
+  | t + 1, c => match N.nextCfg B c with
+    | none => c
+    | some c' => traj B t c'
+
+/-- The strings consulted in the first `t` steps. -/
+noncomputable def qlist (B : Oracle) : ℕ → N.Cfg → List (List Bool)
+  | 0, c => [c.2.2]
+  | t + 1, c => c.2.2 :: match N.nextCfg B c with
+    | none => []
+    | some c' => qlist B t c'
+
+@[simp] theorem traj_zero (B : Oracle) (c : N.Cfg) : N.traj B 0 c = c := rfl
+
+@[simp] theorem qlist_zero (B : Oracle) (c : N.Cfg) : N.qlist B 0 c = [c.2.2] := rfl
+
+theorem qlist_length_le (B : Oracle) : ∀ (t : ℕ) (c : N.Cfg),
+    (N.qlist B t c).length ≤ t + 1 := by
+  intro t
+  induction t with
+  | zero => intro c; simp
+  | succ t ih =>
+    intro c
+    rw [qlist]
+    cases h : N.nextCfg B c with
+    | none => simp
+    | some c' =>
+      simp only [List.length_cons]
+      have := ih c'
+      omega
+
+/-- Every string a short run consults is also consulted by a longer one. -/
+theorem qlist_mono (B : Oracle) : ∀ {t t' : ℕ}, t ≤ t' → ∀ (c : N.Cfg),
+    ∀ s ∈ N.qlist B t c, s ∈ N.qlist B t' c := by
+  intro t
+  induction t with
+  | zero =>
+    intro t' _ c s hs
+    rw [qlist_zero] at hs
+    cases t' with
+    | zero => exact hs
+    | succ t' => simp only [qlist, List.mem_cons]; exact Or.inl (by simpa using hs)
+  | succ t ih =>
+    intro t' ht c s hs
+    cases t' with
+    | zero => exact absurd ht (by omega)
+    | succ t' =>
+      rw [qlist] at hs ⊢
+      cases h : N.nextCfg B c with
+      | none =>
+        rw [h] at hs
+        simpa using hs
+      | some c' =>
+        rw [h] at hs
+        simp only [List.mem_cons] at hs ⊢
+        exact hs.imp id fun hs' => ih (by omega) c' s hs'
+
+/-- The trajectory really is a run, with the query list it records. -/
+theorem run_traj (B : Oracle) : ∀ (t : ℕ) (c : N.Cfg),
+    N.Run B c (N.traj B t c) (N.qlist B t c) := by
+  intro t
+  induction t with
+  | zero => intro c; exact Run.refl c
+  | succ t ih =>
+    intro c
+    rw [traj, qlist]
+    cases h : N.nextCfg B c with
+    | none => simpa using Run.refl c
+    | some c' => exact Run.step (N.mem_succs_of_nextCfg B c c' h) (ih c')
+
+/--
+**A deterministic machine cannot notice an oracle change away from its own queries.**  If
+`B'` agrees with `B` on everything the first `t` steps consult, the trajectory and the
+query list are unchanged.
+-/
+theorem traj_congr {B B' : Oracle} : ∀ (t : ℕ) (c : N.Cfg),
+    (∀ s ∈ N.qlist B t c, B s = B' s) →
+      N.traj B' t c = N.traj B t c ∧ N.qlist B' t c = N.qlist B t c := by
+  intro t
+  induction t with
+  | zero => intro c _; exact ⟨rfl, rfl⟩
+  | succ t ih =>
+    intro c h
+    have hb : B c.2.2 = B' c.2.2 := h _ (by rw [qlist]; exact List.mem_cons_self ..)
+    have hnext : N.nextCfg B' c = N.nextCfg B c := by
+      simp only [nextCfg, hb]
+    rw [traj, qlist, traj, qlist, hnext]
+    cases hc : N.nextCfg B c with
+    | none => exact ⟨rfl, rfl⟩
+    | some c' =>
+      have hrest : ∀ s ∈ N.qlist B t c', B s = B' s := by
+        intro s hs
+        refine h s ?_
+        rw [qlist, hc]
+        exact List.mem_cons_of_mem _ hs
+      obtain ⟨h1, h2⟩ := ih c' hrest
+      simp [h1, h2]
+
+/-- Conversely, for a deterministic machine every run is an initial segment of the
+trajectory. -/
+theorem eq_traj_of_run (hdet : N.Det) {B : Oracle} : ∀ {c c' : N.Cfg} {qs},
+    N.Run B c c' qs → c' = N.traj B (qs.length - 1) c ∧ qs = N.qlist B (qs.length - 1) c := by
+  intro c c' qs r
+  induction r with
+  | refl c => exact ⟨rfl, rfl⟩
+  | @step c c' c'' qs hs r ih =>
+    obtain ⟨h1, h2⟩ := ih
+    have hpos : 0 < qs.length := r.length_pos
+    have hnext : N.nextCfg B c = some c' := (N.mem_succs_iff hdet B c c').1 hs
+    refine ⟨?_, ?_⟩
+    · simp only [List.length_cons]
+      rw [show qs.length + 1 - 1 = (qs.length - 1) + 1 by omega, traj, hnext]
+      exact h1
+    · simp only [List.length_cons]
+      rw [show qs.length + 1 - 1 = (qs.length - 1) + 1 by omega, qlist, hnext]
+      exact congrArg _ h2
+
+/--
+**The diagonalisation step.**  A deterministic machine that does not accept `x` within `t`
+steps still does not accept it after the oracle is changed away from the strings its own
+`t`-step trajectory consults.
+-/
+theorem not_accepts_congr (hdet : N.Det) {B B' : Oracle} {t : ℕ} {x : List Bool}
+    (h : ∀ s ∈ N.qlist B t (N.init x), B s = B' s) (hno : ¬ N.Accepts B t x) :
+    ¬ N.Accepts B' t x := by
+  rintro ⟨c, qs, hr, hlen, hacc⟩
+  obtain ⟨h1, h2⟩ := N.eq_traj_of_run hdet hr
+  have hle : qs.length - 1 ≤ t := by omega
+  have hagree : ∀ s ∈ N.qlist B (qs.length - 1) (N.init x), B s = B' s := fun s hs =>
+    h s (N.qlist_mono B hle _ s hs)
+  obtain ⟨ht, hq⟩ := N.traj_congr (qs.length - 1) (N.init x) hagree
+  refine hno ⟨N.traj B (qs.length - 1) (N.init x), N.qlist B (qs.length - 1) (N.init x),
+    N.run_traj B _ _, ?_, ?_⟩
+  · have := N.qlist_length_le B (qs.length - 1) (N.init x)
+    omega
+  · have hc' : c = N.traj B (qs.length - 1) (N.init x) := h1.trans ht
+    rw [hc'] at hacc
+    refine (N.accepting_congr _ ?_).2 hacc
+    exact h _ (N.qlist_mono B hle _ _ (N.run_traj B (qs.length - 1) (N.init x)).last_mem)
 
 end OTM
 
@@ -526,5 +722,23 @@ theorem bgsLang_inNPRel (B : Oracle) : InNPRel B (bgsLang B) := by
   rw [bgsLang_eq_true_iff]
   obtain ⟨w, hwlen, hwB⟩ := (bgs_inv B hrun hacc (ListBlank.mk []) x []).1 rfl
   exact ⟨w, hwlen, by simpa using hwB⟩
+
+/--
+**The two halves of a diagonalisation stage, combined.**  For a deterministic machine with
+a `t`-step budget, if `2ⁿ` exceeds the budget then there is a string of length `n` the
+machine never consults, and flipping the oracle there alone cannot turn a rejection into an
+acceptance.  This is the move the stage construction makes at every stage.
+-/
+theorem exists_flip (N : OTM) (hdet : N.Det) (B : Oracle) (t n : ℕ) (x : List Bool)
+    (hn : t + 1 < 2 ^ n) (hno : ¬ N.Accepts B t x) :
+    ∃ w : List Bool, w.length = n ∧ w ∉ N.qlist B t (N.init x) ∧
+      ∀ B' : Oracle, (∀ s, s ≠ w → B s = B' s) → ¬ N.Accepts B' t x := by
+  obtain ⟨w, hwlen, hwmem⟩ :=
+    exists_unqueried (N.qlist B t (N.init x)) n
+      (lt_of_le_of_lt (N.qlist_length_le B t (N.init x)) hn)
+  refine ⟨w, hwlen, hwmem, fun B' hagree => ?_⟩
+  refine N.not_accepts_congr hdet (fun s hs => hagree s ?_) hno
+  intro hsw
+  exact hwmem (hsw ▸ hs)
 
 end PvsNP.Relativization

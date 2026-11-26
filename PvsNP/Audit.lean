@@ -161,3 +161,29 @@ results are complete proofs, and the conjecture is not".
 /-- info: 'PvsNP.Relativization.bgsLang_inNPRel' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms PvsNP.Relativization.bgsLang_inNPRel
+
+/-! ### The diagonalisation step -/
+
+/-- info: 'PvsNP.Relativization.OTM.mem_succs_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Relativization.OTM.mem_succs_iff
+
+/-- info: 'PvsNP.Relativization.OTM.traj_congr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Relativization.OTM.traj_congr
+
+/-- info: 'PvsNP.Relativization.OTM.eq_traj_of_run' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Relativization.OTM.eq_traj_of_run
+
+/-- info: 'PvsNP.Relativization.OTM.not_accepts_congr' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Relativization.OTM.not_accepts_congr
+
+/-- info: 'PvsNP.Relativization.exists_flip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Relativization.exists_flip
+
+/-- info: 'PvsNP.Relativization.exists_enumeration' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Relativization.exists_enumeration
