@@ -108,12 +108,14 @@ Lean `v4.36.0`, Mathlib `v4.36.0`.
    cheaply the coefficient can be extracted. The essay's inclusion–exclusion takes `2ⁿ`
    evaluations; compressing those is the open question. The criterion restates the hard
    problem, it does not reduce it.
-3. **Baker–Gill–Solovay.** Every ingredient is in (`PvsNP/Oracle.lean`): the model,
-   enumerability, sensitivity, the pigeonhole, `bgsLang B ∈ NPᴮ`, and one complete
-   diagonalisation stage (`exists_flip`). Still missing: the recursion that *runs* the
-   stages. Its bookkeeping is lengths `n 0 < n 1 < ⋯` with stage `i`'s budget `tᵢ`
-   satisfying `tᵢ + 1 < 2^(n i)` and `n (i+1) > tᵢ`, so stage `i`'s queries all fall below
-   what later stages touch. And — for the `Pᴬ = NPᴬ` half — `PSPACE` theory.
+3. **Baker–Gill–Solovay.** Every *ingredient* is now a theorem in `PvsNP/Oracle.lean`: the
+   model, enumerability (`exists_enumeration`), sensitivity, the pigeonhole,
+   `bgsLang B ∈ NPᴮ`, one complete diagonalisation stage (`exists_flip`), the fresh-length
+   existence (`exists_long_input`), and the length separation that stops stages from
+   interfering (`qlist_init_length_bound`: a `t`-step run only builds buffers of length
+   ≤ `t`). Still missing: the recursion itself, with its invariants — a monotone committed
+   set, a `bound` with every committed string shorter than it, and `bound` advanced past
+   `max (tᵢ+1) (n i + 1)` at each stage. And — for the `Pᴬ = NPᴬ` half — `PSPACE` theory.
 4. **`P ≠ NP`.** Not a missing lemma. Relativization (Baker–Gill–Solovay),
    natural proofs (Razborov–Rudich) and algebrization (Aaronson–Wigderson) each rule out
    a class of arguments that includes the ones sketched in the essay — in particular,
@@ -130,6 +132,37 @@ are **not** theorems here: that this model is polynomially equivalent to multi-t
 machines, and that nondeterministic polynomial time coincides with the
 verifier/certificate definition of NP. Anything claimed about the Clay problem rather than
 about this model depends on those two.
+
+## Relation to `Primes_to_Two_Routes_Progress.md`
+
+That write-up covers the same starting material and then goes in a different direction
+(local search, parity summaries, and a reduction to directed two-linkage). Overlap and
+division of labour:
+
+| That document | Here |
+| --- | --- |
+| §1 inventories, free commutative monoid, `E(u+v)=E(u)E(v)` | `PvsNP/Inventory.lean`, proved |
+| §2 `∏ b_j = T` ⟺ exact cover; the `{6,10,15,35}` example; witness recovery by deletion | `PvsNP/ExactCover.lean`, `PvsNP/SelfReduction.lean`, proved |
+| §2 tagged determinant, coefficient of `z₁⋯zₙ` | `PvsNP/Determinant.lean`, proved for all `n` |
+| §3 the 2×2 colored square beating pairwise tests | `PvsNP/Matching.lean`, proved |
+| §3 degree-2-on-one-side is poly / degree-3-on-all-sides is NP-complete | not formalized here |
+| §§4–5 summary-size and parity lower bounds | not formalized here |
+| §§6–7 one-triple improvement; reduction to directed two-linkage | not formalized here |
+| §8 appendix: two-disjoint-paths spec, brute-force reference solver, functional-graph shortcut | independent; verified — see below |
+
+Its Lean appendix was checked: extracted with the documented `awk` command, it compiles
+under Lean 4.19.0 with `-DwarningAsError=true`, emits exactly the documented output
+(`(false, true)` then `(true, 2)`), and all six theorems (`summary_correct`,
+`functionalSummary_correct`, `functional_agrees`, `leftSides_length`, `successorCalls_le`,
+`correct_of_agreement`) depend only on `propext` / `Classical.choice` / `Quot.sound` — no
+`sorryAx`.
+
+Two caveats on that document, neither affecting its conclusions. The NP-completeness of
+directed two-linkage in general digraphs is due to Fortune–Hopcroft–Wyllie (1980); the
+citation given points at Chudnovsky–Scott–Seymour, which treats tournaments. And §7's SCC
+composition argument is explicitly a sketch ("a paper argument"), not among the
+machine-checked claims — the document says so, and its §9 is appropriately clear that
+P vs NP remains open.
 
 ## Honest assessment of the starting intuition
 

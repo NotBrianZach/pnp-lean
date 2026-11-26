@@ -10,6 +10,7 @@ import Mathlib.Data.List.ToFinsupp
 import Mathlib.Data.Fintype.Sum
 import Mathlib.Data.Fintype.Option
 import Mathlib.Data.Fintype.Sets
+import Mathlib.Analysis.SpecificLimits.Normed
 
 /-!
 # Oracle machines, and the technical core of relativization
@@ -49,18 +50,25 @@ Main results:
 * `exists_flip` : the two halves of a stage combined -- an unconsulted string of length `n`
   exists, and flipping the oracle there preserves rejection.
 * `exists_enumeration` : the candidates can be listed.
+* `qlist_init_length_bound` : **queries are short.**  A `t`-step run only ever builds
+  buffers of length at most `t`.  This is what makes later stages invisible to earlier
+  ones: they act at lengths the earlier run could not even write down.
+* `exists_long_input` : above any floor there is an input length on which the machine's
+  whole budget cannot exhaust the strings of that length (polynomial beats nothing,
+  `2ⁿ` beats polynomial).
 
 ## What is *not* here
 
 Baker-Gill-Solovay itself.  Two pieces remain:
 
-1. The stage recursion for `∃ B, Pᴮ ≠ NPᴮ`.  Each individual stage is now a theorem
-   (`exists_flip`), and the candidates can be enumerated (`exists_enumeration`), but the
-   recursion that runs the stages is not written.  The bookkeeping it needs: lengths
-   `n 0 < n 1 < ⋯` chosen so that stage `i`'s budget `tᵢ` satisfies `tᵢ + 1 < 2 ^ n i` and
-   `n (i+1) > tᵢ`, so that stage `i`'s queries are all shorter than anything later stages
-   touch, and the final oracle therefore agrees with the stage-`i` partial oracle on
-   exactly the strings stage `i` looked at.
+1. The stage recursion for `∃ B, Pᴮ ≠ NPᴮ`.  Every *ingredient* is now a theorem: one
+   stage (`exists_flip`), the enumeration (`exists_enumeration`), the fresh-length
+   existence (`exists_long_input`), and the length separation that keeps stages from
+   interfering (`qlist_init_length_bound`).  What is not written is the recursion itself,
+   together with its invariants: a monotone committed set, a `bound` field with every
+   committed string shorter than it, lengths `n i` chosen above both `bound` and
+   `exists_long_input`'s floor, and `bound` advanced past `max (tᵢ + 1) (n i + 1)` so that
+   later stages act strictly beyond stage `i`'s reach.
 2. For the other half, `∃ A, Pᴬ = NPᴬ`: enough `PSPACE` theory to see that a
    `PSPACE`-complete oracle collapses the two classes.  This is the expensive one.
 
@@ -157,6 +165,11 @@ def act : OStmt → Tape Sym × List Bool → Tape Sym × List Bool
   | OStmt.write a, p => (p.1.write a, p.2)
   | OStmt.push b, p => (p.1, p.2 ++ [b])
   | OStmt.clear, p => (p.1, [])
+
+/-- One step lengthens the query buffer by at most one bit. -/
+theorem act_buffer_length (stmt : OStmt) (p : Tape Sym × List Bool) :
+    (act stmt p).2.length ≤ p.2.length + 1 := by
+  cases stmt <;> simp [act]
 
 /-- The starting configuration: the input on the tape, the buffer empty. -/
 def init (x : List Bool) : N.Cfg := (N.start, Tape.mk₁ (x.map some), [])
@@ -325,6 +338,47 @@ theorem qlist_length_le (B : Oracle) : ∀ (t : ℕ) (c : N.Cfg),
       simp only [List.length_cons]
       have := ih c'
       omega
+
+theorem nextCfg_buffer_length (B : Oracle) {c c' : N.Cfg}
+    (h : N.nextCfg B c = some c') : c'.2.2.length ≤ c.2.2.length + 1 := by
+  obtain ⟨y, -, rfl⟩ := N.mem_succs_of_nextCfg B c c' h
+  exact act_buffer_length y.2 c.2
+
+/--
+**Queries are short.**  A `t`-step run can only build buffers of length at most `t`, since
+the buffer starts empty and grows by at most one bit per step.  This is what makes a stage
+construction's later choices invisible to an earlier stage: they live at lengths the
+earlier run could not even write down.
+-/
+theorem qlist_length_bound (B : Oracle) : ∀ (t : ℕ) (c : N.Cfg) (s : List Bool),
+    s ∈ N.qlist B t c → s.length ≤ c.2.2.length + t := by
+  intro t
+  induction t with
+  | zero =>
+    intro c s hs
+    rw [qlist_zero, List.mem_singleton] at hs
+    simp [hs]
+  | succ t ih =>
+    intro c s hs
+    rw [qlist] at hs
+    cases h : N.nextCfg B c with
+    | none =>
+      rw [h] at hs
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at hs
+      simp [hs]
+    | some c' =>
+      rw [h] at hs
+      rcases List.mem_cons.1 hs with rfl | hs'
+      · omega
+      · have h1 := ih c' s hs'
+        have h2 := N.nextCfg_buffer_length B h
+        omega
+
+/-- On an initial configuration the buffer starts empty, so every query is at most `t`
+bits long. -/
+theorem qlist_init_length_bound (B : Oracle) (t : ℕ) (x s : List Bool)
+    (hs : s ∈ N.qlist B t (N.init x)) : s.length ≤ t := by
+  simpa [init] using N.qlist_length_bound B t (N.init x) s hs
 
 /-- Every string a short run consults is also consulted by a longer one. -/
 theorem qlist_mono (B : Oracle) : ∀ {t t' : ℕ}, t ≤ t' → ∀ (c : N.Cfg),
@@ -722,6 +776,54 @@ theorem bgsLang_inNPRel (B : Oracle) : InNPRel B (bgsLang B) := by
   rw [bgsLang_eq_true_iff]
   obtain ⟨w, hwlen, hwB⟩ := (bgs_inv B hrun hacc (ListBlank.mk []) x []).1 rfl
   exact ⟨w, hwlen, by simpa using hwB⟩
+
+/-! ### A long enough input exists at every stage
+
+For the pigeonhole to bite, the input length `n` must be big enough that `2ⁿ` exceeds the
+machine's budget on inputs of that length.  Since the budget is polynomial in `n`, such
+`n` exist above any floor -- which is what lets a stage construction keep moving to fresh
+lengths.
+-/
+
+open Filter Asymptotics in
+/-- A polynomial is eventually below `2ⁿ`. -/
+theorem poly_lt_two_pow (k c : ℕ) : ∃ M : ℕ, ∀ n ≥ M, c * (n + 1) ^ k + c + 1 < 2 ^ n := by
+  set D : ℕ := c * 2 ^ k + c + 1 with hD
+  have hlo : (fun n : ℕ => (n : ℝ) ^ k) =o[atTop] fun n : ℕ => (2 : ℝ) ^ n :=
+    isLittleO_pow_const_const_pow_of_one_lt k one_lt_two
+  have hlo2 : (fun n : ℕ => (D : ℝ) * (n : ℝ) ^ k) =o[atTop] fun n : ℕ => (2 : ℝ) ^ n :=
+    hlo.const_mul_left _
+  obtain ⟨M₀, hM₀⟩ := eventually_atTop.1 (hlo2.def (by norm_num : (0 : ℝ) < 1 / 2))
+  refine ⟨max M₀ 1, fun n hn => ?_⟩
+  have hn1 : 1 ≤ n := le_trans (le_max_right _ _) hn
+  have hnM : M₀ ≤ n := le_trans (le_max_left _ _) hn
+  have hr := hM₀ n hnM
+  rw [Real.norm_eq_abs, Real.norm_eq_abs, abs_of_nonneg (by positivity),
+    abs_of_nonneg (by positivity)] at hr
+  have hstrict : (D : ℝ) * (n : ℝ) ^ k < (2 : ℝ) ^ n := by
+    have h2 : (0 : ℝ) < (2 : ℝ) ^ n := by positivity
+    calc (D : ℝ) * (n : ℝ) ^ k ≤ (1 / 2) * (2 : ℝ) ^ n := hr
+      _ < (2 : ℝ) ^ n := by linarith
+  have hnat : D * n ^ k < 2 ^ n := by
+    have hcast : ((D * n ^ k : ℕ) : ℝ) < ((2 ^ n : ℕ) : ℝ) := by push_cast; exact hstrict
+    exact Nat.cast_lt.1 hcast
+  have hpow : (n + 1) ^ k ≤ 2 ^ k * n ^ k := by
+    calc (n + 1) ^ k ≤ (2 * n) ^ k := Nat.pow_le_pow_left (by omega) k
+      _ = 2 ^ k * n ^ k := by rw [Nat.mul_pow]
+  have hone : 1 ≤ n ^ k := Nat.one_le_pow _ _ hn1
+  calc c * (n + 1) ^ k + c + 1 ≤ c * (2 ^ k * n ^ k) + (c + 1) * n ^ k := by
+        have := Nat.mul_le_mul_left c hpow
+        nlinarith [hone]
+    _ = D * n ^ k := by rw [hD]; ring
+    _ < 2 ^ n := hnat
+
+/-- **A stage can always find a long enough fresh input length.**  Above any floor `N₀`
+there is an `n` on which the machine's whole budget cannot exhaust the length-`n`
+strings. -/
+theorem exists_long_input (k c N₀ : ℕ) : ∃ n ≥ N₀, polyBound k c n + 1 < 2 ^ n := by
+  obtain ⟨M, hM⟩ := poly_lt_two_pow k c
+  refine ⟨max M N₀, le_max_right _ _, ?_⟩
+  simpa [polyBound] using hM (max M N₀) (le_max_left _ _)
 
 /--
 **The two halves of a diagonalisation stage, combined.**  For a deterministic machine with

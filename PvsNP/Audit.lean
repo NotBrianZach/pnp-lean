@@ -187,3 +187,17 @@ results are complete proofs, and the conjecture is not".
 /-- info: 'PvsNP.Relativization.exists_enumeration' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms PvsNP.Relativization.exists_enumeration
+
+/-! ### Ingredients for the stage recursion -/
+
+/-- info: 'PvsNP.Relativization.OTM.qlist_init_length_bound' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Relativization.OTM.qlist_init_length_bound
+
+/-- info: 'PvsNP.Relativization.poly_lt_two_pow' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Relativization.poly_lt_two_pow
+
+/-- info: 'PvsNP.Relativization.exists_long_input' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Relativization.exists_long_input
