@@ -15,6 +15,13 @@ mathematician has audited the proof, that was the open question worth attacking.
 question of whether the statement that is *audited* is the same one that is *proved*. It
 does not verify the mathematics. Nobody has.
 
+**What was run locally for this audit:** the repository was cloned and Mathlib's cache
+fetched; the project's own build was *not* completed here, so the axiom check
+(`scripts/PrintAxioms.lean`) was **not** independently reproduced. The axiom and
+independent-kernel claims below are reported from upstream CI configuration
+(`.github/workflows/ci.yml`, `comparator.json`), not from a local run. The definitional
+findings in this note come from reading the source and do not depend on the build.
+
 **Finding: I could not find a definitional gap.** Where conventions differ from textbooks
 the difference is immaterial at the scale involved, and where there is a genuine choice the
 definitions are the *strong* one.
