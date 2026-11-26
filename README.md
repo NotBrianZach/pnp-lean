@@ -89,13 +89,26 @@ statements *do* depend on `sorryAx`.
 ## Build
 
 ```bash
-export PATH=/nix/store/aidjqiqb58j26if2jq5h193dnzdw6dvv-elan-4.2.1/bin:$PATH
-export ELAN_HOME=$HOME/.elan
-lake exe cache get      # already done; ~7 GB of Mathlib oleans
+# Toolchain binaries live under ELAN_HOME once the toolchain is installed:
+export PATH=$HOME/.elan/toolchains/leanprover--lean4---v4.36.0/bin:$PATH
+lake exe cache get      # ~7 GB of Mathlib oleans
 lake build
 ```
 
-Lean `v4.36.0`, Mathlib `v4.36.0`.
+Lean `v4.36.0`, Mathlib `v4.36.0`. Expect exactly two `sorry` warnings, both in
+`PvsNP/Conjecture.lean`.
+
+To install the toolchain in the first place you need `elan`. On NixOS, `nix shell
+nixpkgs#elan` works, but **don't** hardcode the resulting store path — a `nix build
+--no-link` result has nothing holding it alive and will be garbage-collected out from under
+you. Either `nix profile install nixpkgs#elan`, or re-enter the shell each time:
+
+```bash
+nix shell nixpkgs#elan --command elan toolchain install leanprover/lean4:v4.36.0
+```
+
+After that the toolchain's own `lake` and `lean` under `$HOME/.elan/toolchains/…/bin` are
+enough; `elan` itself is only needed to install or update toolchains.
 
 ## Files
 

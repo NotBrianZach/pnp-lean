@@ -15,12 +15,24 @@ mathematician has audited the proof, that was the open question worth attacking.
 question of whether the statement that is *audited* is the same one that is *proved*. It
 does not verify the mathematics. Nobody has.
 
-**What was run locally for this audit:** the repository was cloned and Mathlib's cache
-fetched; the project's own build was *not* completed here, so the axiom check
-(`scripts/PrintAxioms.lean`) was **not** independently reproduced. The axiom and
-independent-kernel claims below are reported from upstream CI configuration
-(`.github/workflows/ci.yml`, `comparator.json`), not from a local run. The definitional
-findings in this note come from reading the source and do not depend on the build.
+**What was run locally for this audit** (all reproduced on this machine, Lean
+v4.37.0-rc1):
+
+| Check | Result |
+|---|---|
+| `lake build` | succeeds, 18,946 jobs |
+| `scripts/PrintAxioms.lean` | all five theorems depend on exactly `propext`, `Classical.choice`, `Quot.sound` — **no `sorryAx`** |
+| `sorry` outside `Challenge.lean` | none |
+| each theorem's *type* | `Solution.separation : Statement.Separation`, and likewise for `separationClosure`, `mainTheorem`, `mainTheoremApprox` |
+
+That last row is the one that matters most. It confirms the theorems whose axioms were
+checked **are** the statements audited below — no indirection between what is claimed and
+what is proved.
+
+Not reproduced here: the independent-kernel re-checks (`con-leche`, `con-ron`, `nanoda`).
+Those are separate tools; the claims about them are reported from upstream CI configuration
+(`.github/workflows/ci.yml`, `comparator.json`). The definitional findings in this note
+come from reading the source and do not depend on any build.
 
 **Finding: I could not find a definitional gap.** Where conventions differ from textbooks
 the difference is immaterial at the scale involved, and where there is a genuine choice the
