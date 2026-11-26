@@ -116,6 +116,41 @@ def Has3DM (A : Instance n) : Prop :=
   ∃ (f g : Fin n → Fin n), Function.Bijective f ∧ Function.Bijective g ∧
     ∀ i, g i ∈ A i (f i)
 
+/-- A perfect matching of a two-dimensional menu. -/
+def HasMatching₂ (M : Fin n → Finset (Fin n)) : Prop :=
+  ∃ f : Fin n → Fin n, Function.Bijective f ∧ ∀ i, f i ∈ M i
+
+/--
+**When coupling does not matter.**  If every slot's menu is a *rectangle* -- any allowed
+column may be paired with any allowed colour -- then the two coordinates decouple
+completely: a three-dimensional matching exists exactly when each of the two independent
+bipartite matchings does.
+
+This is the exact complement of `Matching.pairwise_tests_insufficient`.  There, the colored
+square passes both pairwise tests and still has no solution; its menus are *not*
+rectangles (cell `(i,j)` admits only one colour, which depends on both `i` and `j`).  Here
+the menus are rectangles and the pairwise answers are the whole story.  The dividing line
+is whether the colour available at a slot depends on which column the slot took.
+-/
+theorem has3DM_rectangle_iff (J C : Fin n → Finset (Fin n)) :
+    Has3DM (fun i j => if j ∈ J i then C i else ∅) ↔
+      HasMatching₂ J ∧ HasMatching₂ C := by
+  classical
+  constructor
+  · rintro ⟨f, g, hf, hg, hallow⟩
+    refine ⟨⟨f, hf, fun i => ?_⟩, ⟨g, hg, fun i => ?_⟩⟩
+    · have h : g i ∈ (if f i ∈ J i then C i else ∅) := hallow i
+      by_contra hcon
+      rw [ite_eq_right hcon] at h
+      exact absurd h (Finset.notMem_empty _)
+    · have h : g i ∈ (if f i ∈ J i then C i else ∅) := hallow i
+      by_cases hj : f i ∈ J i
+      · rwa [ite_eq_left hj] at h
+      · rw [ite_eq_right hj] at h
+        exact absurd h (Finset.notMem_empty _)
+  · rintro ⟨⟨f, hf, hfJ⟩, ⟨g, hg, hgC⟩⟩
+    exact ⟨f, g, hf, hg, fun i => by simp [hfJ i, hgC i]⟩
+
 /-- The tagged colour matrix: entry `(i, j)` is `∑_{k allowed} w_{ijk} z_k`. -/
 noncomputable def mat (A : Instance n) :
     Matrix (Fin n) (Fin n) (MvPolynomial (Fin n) (MvPolynomial (Tag n) ℤ)) :=

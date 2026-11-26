@@ -63,6 +63,12 @@ Lean `v4.36.0`, Mathlib `v4.36.0`.
   no summary that keeps only the three pairwise yes/no answers can decide 3DM.
 - `Matching.det_coeff_eq_zero` — the determinant `r² − b²` has zero `rb` coefficient;
   `Matching.rainbow_det_coeff_ne_zero` shows the test is not vacuous.
+- `Determinant.has3DM_rectangle_iff` — **when coupling doesn't matter**: if every slot's
+  menu is a rectangle (any allowed column pairs with any allowed colour), a 3D matching
+  exists exactly when each of the two independent bipartite matchings does. The exact
+  complement of `pairwise_tests_insufficient`: the colored square's menus are *not*
+  rectangles, since the colour available at a cell depends on the column. That dependence
+  is the whole dividing line.
 - `Determinant.coeff_det` — the essay's general construction, proved for every `n`: the
   coefficient of `z₁⋯zₙ` in `det(∑_{(i,j,k) allowed} w_{ijk} z_k)` is exactly the signed
   sum of tag monomials over solutions. `Determinant.colorCoeff_ne_zero_iff` is the
@@ -154,7 +160,8 @@ division of labour:
 | §2 `∏ b_j = T` ⟺ exact cover; the `{6,10,15,35}` example; witness recovery by deletion | `PvsNP/ExactCover.lean`, `PvsNP/SelfReduction.lean`, proved |
 | §2 tagged determinant, coefficient of `z₁⋯zₙ` | `PvsNP/Determinant.lean`, proved for all `n` |
 | §3 the 2×2 colored square beating pairwise tests | `PvsNP/Matching.lean`, proved |
-| §3 degree-2-on-one-side is poly / degree-3-on-all-sides is NP-complete | not formalized here |
+| §3 threshold, top row: one rectangle per slot ⇒ two independent matchings | `Determinant.has3DM_rectangle_iff`, proved |
+| §3 threshold, other rows: degree-2-on-one-side is poly / degree-3-on-all-sides is NP-complete | not formalized here |
 | §§4–5 summary-size and parity lower bounds | not formalized here |
 | §§6–7 one-triple improvement; reduction to directed two-linkage | not formalized here |
 | §8 appendix: two-disjoint-paths spec, brute-force reference solver, functional-graph shortcut | independent; verified — see below |

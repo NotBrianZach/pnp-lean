@@ -219,3 +219,9 @@ results are complete proofs, and the conjecture is not".
 /-- info: 'PvsNP.Relativization.exists_oracle_pne' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms PvsNP.Relativization.exists_oracle_pne
+
+/-! ### The rectangle case of the three-dimensional threshold -/
+
+/-- info: 'PvsNP.Determinant.has3DM_rectangle_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Determinant.has3DM_rectangle_iff
