@@ -4,6 +4,7 @@ Copyright (c) 2026. Released under Apache 2.0.
 import PvsNP.Complexity
 import PvsNP.Enumeration
 import PvsNP.Oracle
+import PvsNP.BGS
 import PvsNP.ExactCover
 import PvsNP.Inventory
 import PvsNP.Matching
@@ -48,6 +49,9 @@ Everything below is proved, with no `sorry` and no axioms beyond `propext`,
 * The Baker-Gill-Solovay test language is in `NPᴮ`: `Relativization.bgsLang_inNPRel`
 * A single diagonalisation stage: `Relativization.OTM.not_accepts_congr`,
   `Relativization.exists_flip`, `Relativization.exists_enumeration`
+* **Baker-Gill-Solovay, separating half**: `Relativization.exists_oracle_pne` -- there is
+  an oracle `B` with `Pᴮ ≠ NPᴮ`.  So the relativization barrier below is a theorem of this
+  development, not a citation.
 
 ## What is *not* established, and why each gap is real
 
@@ -78,6 +82,10 @@ Everything below is proved, with no `sorry` and no axioms beyond `propext`,
      anything that treats the machine as a black box -- cannot settle the question.  The
      essay's observation that the search space is enormous is of exactly this kind, which
      is why ordinary matching is the right cautionary example.
+     The `Pᴮ ≠ NPᴮ` half is **proved here**, in `PvsNP/BGS.lean`
+     (`Relativization.exists_oracle_pne`).  The `Pᴬ = NPᴬ` half still needs `PSPACE`
+     theory and is not formalized; but note that the separating half is the one that does
+     the barrier's work -- it is what rules out oracle-insensitive proofs of `P ≠ NP`.
 
    * **Natural proofs** (Razborov-Rudich 1997).  If strong pseudorandom functions exist,
      no "natural" combinatorial property -- one that is checkable in exponential time and
@@ -100,16 +108,10 @@ Everything below is proved, with no `sorry` and no axioms beyond `propext`,
 A formalization project on this material could, without solving anything open:
 
 * finish item 1 (an encoding plus a cost model, giving a formal NP-completeness theorem);
-* formalize the Baker-Gill-Solovay oracle separation, which is a self-contained
-  diagonalization and would make the relativization barrier a theorem rather than a
-  citation.  `PvsNP/Oracle.lean` now has the model, the enumerability
-  (`Relativization.instCountableOTM`), the two working lemmas -- oracle sensitivity
-  (`Run.congr`) and the pigeonhole (`exists_unqueried`) -- the test language's membership
-  in `NPᴮ` (`bgsLang_inNPRel`), and a single diagonalisation stage (`exists_flip`, built on
-  `not_accepts_congr`).  Still missing: the recursion that runs the stages, with lengths
-  chosen so each stage's queries stay below everything later stages touch; and -- for the
-  `Pᴬ = NPᴬ` half -- enough `PSPACE` theory to know that a `PSPACE`-complete oracle
-  collapses the two classes;
+* finish Baker-Gill-Solovay.  The separating half is **done**
+  (`PvsNP/BGS.lean`).  The collapsing half, `∃ A, Pᴬ = NPᴬ`, needs a `PSPACE`-complete
+  oracle and enough `PSPACE` theory to see that it collapses the two classes -- which
+  means defining space-bounded computation in this model first;
 * formalize Razborov's monotone lower bound for clique, which is a real lower bound
   against a real circuit class.
 

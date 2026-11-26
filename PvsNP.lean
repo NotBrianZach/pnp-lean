@@ -6,5 +6,6 @@ import PvsNP.Determinant
 import PvsNP.Complexity
 import PvsNP.Enumeration
 import PvsNP.Oracle
+import PvsNP.BGS
 import PvsNP.Conjecture
 import PvsNP.Audit

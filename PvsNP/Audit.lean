@@ -201,3 +201,21 @@ results are complete proofs, and the conjecture is not".
 /-- info: 'PvsNP.Relativization.exists_long_input' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms PvsNP.Relativization.exists_long_input
+
+/-! ### Baker-Gill-Solovay, separating half -/
+
+/-- info: 'PvsNP.Relativization.agree' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Relativization.agree
+
+/-- info: 'PvsNP.Relativization.mem_or_long' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Relativization.mem_or_long
+
+/-- info: 'PvsNP.Relativization.not_inPRel' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Relativization.not_inPRel
+
+/-- info: 'PvsNP.Relativization.exists_oracle_pne' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Relativization.exists_oracle_pne

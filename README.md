@@ -33,7 +33,8 @@ Lean `v4.36.0`, Mathlib `v4.36.0`.
 | `PvsNP/Determinant.lean` | The general-`n` tagged determinant: its `z₁⋯zₙ` coefficient is nonzero iff a 3D matching exists |
 | `PvsNP/Complexity.lean` | Nondeterministic Post-Turing machines; definitions of `P` and `NP`; `P ⊆ NP` |
 | `PvsNP/Enumeration.lean` | Machines are finite data: `Countable NTM`, so `P` and `NP` are countable and proper |
-| `PvsNP/Oracle.lean` | Oracle machines, relativized `Pᴮ`/`NPᴮ`, and the two lemmas every relativization argument runs on |
+| `PvsNP/Oracle.lean` | Oracle machines, relativized `Pᴮ`/`NPᴮ`, and the lemmas every relativization argument runs on |
+| `PvsNP/BGS.lean` | **Baker–Gill–Solovay, separating half: `∃ B, Pᴮ ≠ NPᴮ`** |
 | `PvsNP/Conjecture.lean` | `P ≠ NP` stated, **not proved**, plus a written account of the barriers |
 | `PvsNP/Audit.lean` | `#guard_msgs` over `#print axioms`: machine-checks which results are hole-free |
 
@@ -91,6 +92,16 @@ Lean `v4.36.0`, Mathlib `v4.36.0`.
   what determinism buys, via a functional trajectory (`nextCfg`, `traj`, `qlist`,
   legitimised under `Det` by `mem_succs_iff`). `exists_flip` packages a whole stage, and
   `exists_enumeration` lists the candidates.
+- `Relativization.exists_oracle_pne` — **Baker–Gill–Solovay, separating half: there is an
+  oracle `B` with `Pᴮ ≠ NPᴮ`.** The stage construction: `enum` lists every candidate
+  (machine + budget); stage `i` picks a fresh input length above everything used so far on
+  which the budget can't exhaust the strings of that length, runs the candidate against
+  the oracle built so far, and either commits nothing (if it accepts — then the input is
+  outside `bgsLang` while the machine accepts) or commits one unconsulted string of that
+  length (if it rejects — then the input is inside `bgsLang` and `not_accepts_congr` keeps
+  the rejection). `agree` is the key lemma: the final oracle and each stage's partial
+  oracle agree on everything that stage looked at. So the relativization barrier is a
+  theorem of this development, not a citation.
 - `Relativization.bgsLang_inNPRel` — **`bgsLang B ∈ NPᴮ`**, both directions, via a
   three-state guessing machine: push a guessed bit per input cell, move right, then
   consult the oracle on the buffer at the blank. `bgs_run` builds the accepting run by
@@ -108,14 +119,12 @@ Lean `v4.36.0`, Mathlib `v4.36.0`.
    cheaply the coefficient can be extracted. The essay's inclusion–exclusion takes `2ⁿ`
    evaluations; compressing those is the open question. The criterion restates the hard
    problem, it does not reduce it.
-3. **Baker–Gill–Solovay.** Every *ingredient* is now a theorem in `PvsNP/Oracle.lean`: the
-   model, enumerability (`exists_enumeration`), sensitivity, the pigeonhole,
-   `bgsLang B ∈ NPᴮ`, one complete diagonalisation stage (`exists_flip`), the fresh-length
-   existence (`exists_long_input`), and the length separation that stops stages from
-   interfering (`qlist_init_length_bound`: a `t`-step run only builds buffers of length
-   ≤ `t`). Still missing: the recursion itself, with its invariants — a monotone committed
-   set, a `bound` with every committed string shorter than it, and `bound` advanced past
-   `max (tᵢ+1) (n i + 1)` at each stage. And — for the `Pᴬ = NPᴬ` half — `PSPACE` theory.
+3. **The collapsing half of Baker–Gill–Solovay**, `∃ A, Pᴬ = NPᴬ`. Needs a
+   `PSPACE`-complete oracle and enough `PSPACE` theory to see that it collapses the two
+   classes — which means defining space-bounded computation in this model first. (The
+   *separating* half, `∃ B, Pᴮ ≠ NPᴮ`, is proved — see `PvsNP/BGS.lean`. That's the half
+   that does the barrier's work: it is what rules out oracle-insensitive proofs of
+   `P ≠ NP`.)
 4. **`P ≠ NP`.** Not a missing lemma. Relativization (Baker–Gill–Solovay),
    natural proofs (Razborov–Rudich) and algebrization (Aaronson–Wigderson) each rule out
    a class of arguments that includes the ones sketched in the essay — in particular,
