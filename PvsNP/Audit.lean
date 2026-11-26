@@ -225,3 +225,21 @@ results are complete proofs, and the conjecture is not".
 /-- info: 'PvsNP.Determinant.has3DM_rectangle_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms PvsNP.Determinant.has3DM_rectangle_iff
+
+/-! ### Space-bounded computation -/
+
+/-- info: 'PvsNP.Complexity.NTM.posRun_toRun' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Complexity.NTM.posRun_toRun
+
+/-- info: 'PvsNP.Complexity.NTM.exists_posRun' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Complexity.NTM.exists_posRun
+
+/-- info: 'PvsNP.Complexity.NTM.offset_bounds' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Complexity.NTM.offset_bounds
+
+/-- info: 'PvsNP.Complexity.acceptsInSpace_of_accepts' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms PvsNP.Complexity.acceptsInSpace_of_accepts

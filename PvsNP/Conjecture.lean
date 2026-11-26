@@ -2,6 +2,7 @@
 Copyright (c) 2026. Released under Apache 2.0.
 -/
 import PvsNP.Complexity
+import PvsNP.Space
 import PvsNP.Enumeration
 import PvsNP.Oracle
 import PvsNP.BGS
@@ -52,6 +53,9 @@ Everything below is proved, with no `sorry` and no axioms beyond `propext`,
 * **Baker-Gill-Solovay, separating half**: `Relativization.exists_oracle_pne` -- there is
   an oracle `B` with `Pᴮ ≠ NPᴮ`.  So the relativization barrier below is a theorem of this
   development, not a citation.
+* Space-bounded computation, and that space is at most time:
+  `Complexity.NTM.offset_bounds`, `Complexity.NTM.posRun_toRun`,
+  `Complexity.NTM.exists_posRun`, `Complexity.acceptsInSpace_of_accepts`, `InPSPACE`
 
 ## What is *not* established, and why each gap is real
 
@@ -108,10 +112,12 @@ Everything below is proved, with no `sorry` and no axioms beyond `propext`,
 A formalization project on this material could, without solving anything open:
 
 * finish item 1 (an encoding plus a cost model, giving a formal NP-completeness theorem);
-* finish Baker-Gill-Solovay.  The separating half is **done**
-  (`PvsNP/BGS.lean`).  The collapsing half, `∃ A, Pᴬ = NPᴬ`, needs a `PSPACE`-complete
-  oracle and enough `PSPACE` theory to see that it collapses the two classes -- which
-  means defining space-bounded computation in this model first;
+* finish Baker-Gill-Solovay.  The separating half is **done** (`PvsNP/BGS.lean`), and
+  space-bounded computation is now defined (`PvsNP/Space.lean`).  The collapsing half,
+  `∃ A, Pᴬ = NPᴬ`, still needs: a step-counter construction (so that `P ⊆ PSPACE` can be
+  proved -- `Accepts` bounds time while `AcceptsInSpace` does not, so one machine does not
+  witness both), a `PSPACE`-complete language, and the two inclusions
+  `NPᴬ ⊆ PSPACE ⊆ Pᴬ`;
 * formalize Razborov's monotone lower bound for clique, which is a real lower bound
   against a real circuit class.
 

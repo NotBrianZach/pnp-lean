@@ -4,6 +4,7 @@ import PvsNP.SelfReduction
 import PvsNP.Matching
 import PvsNP.Determinant
 import PvsNP.Complexity
+import PvsNP.Space
 import PvsNP.Enumeration
 import PvsNP.Oracle
 import PvsNP.BGS

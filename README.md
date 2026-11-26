@@ -35,6 +35,7 @@ Lean `v4.36.0`, Mathlib `v4.36.0`.
 | `PvsNP/Enumeration.lean` | Machines are finite data: `Countable NTM`, so `P` and `NP` are countable and proper |
 | `PvsNP/Oracle.lean` | Oracle machines, relativized `Pᴮ`/`NPᴮ`, and the lemmas every relativization argument runs on |
 | `PvsNP/BGS.lean` | **Baker–Gill–Solovay, separating half: `∃ B, Pᴮ ≠ NPᴮ`** |
+| `PvsNP/Space.lean` | Space-bounded computation: position-tracking runs, space ≤ time, `InPSPACE` |
 | `PvsNP/Conjecture.lean` | `P ≠ NP` stated, **not proved**, plus a written account of the barriers |
 | `PvsNP/Audit.lean` | `#guard_msgs` over `#print axioms`: machine-checks which results are hole-free |
 
@@ -125,12 +126,14 @@ Lean `v4.36.0`, Mathlib `v4.36.0`.
    cheaply the coefficient can be extracted. The essay's inclusion–exclusion takes `2ⁿ`
    evaluations; compressing those is the open question. The criterion restates the hard
    problem, it does not reduce it.
-3. **The collapsing half of Baker–Gill–Solovay**, `∃ A, Pᴬ = NPᴬ`. Needs a
-   `PSPACE`-complete oracle and enough `PSPACE` theory to see that it collapses the two
-   classes — which means defining space-bounded computation in this model first. (The
-   *separating* half, `∃ B, Pᴮ ≠ NPᴮ`, is proved — see `PvsNP/BGS.lean`. That's the half
-   that does the barrier's work: it is what rules out oracle-insensitive proofs of
-   `P ≠ NP`.)
+3. **The collapsing half of Baker–Gill–Solovay**, `∃ A, Pᴬ = NPᴬ`. Space-bounded
+   computation is now defined (`PvsNP/Space.lean`) and space ≤ time is proved, but the
+   collapse still needs: a **step-counter construction** (so `P ⊆ PSPACE` goes through —
+   `Accepts` bounds time while `AcceptsInSpace` deliberately doesn't, so one machine
+   doesn't witness both), a `PSPACE`-complete language, and the two inclusions
+   `NPᴬ ⊆ PSPACE ⊆ Pᴬ`. (The *separating* half, `∃ B, Pᴮ ≠ NPᴮ`, **is** proved — see
+   `PvsNP/BGS.lean`. That's the half that does the barrier's work: it is what rules out
+   oracle-insensitive proofs of `P ≠ NP`.)
 4. **`P ≠ NP`.** Not a missing lemma. Relativization (Baker–Gill–Solovay),
    natural proofs (Razborov–Rudich) and algebrization (Aaronson–Wigderson) each rule out
    a class of arguments that includes the ones sketched in the essay — in particular,
