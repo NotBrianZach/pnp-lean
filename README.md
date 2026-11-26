@@ -239,6 +239,76 @@ machines, and that nondeterministic polynomial time coincides with the
 verifier/certificate definition of NP. Anything claimed about the Clay problem rather than
 about this model depends on those two.
 
+## References — what each file formalizes, and whose result it is
+
+Most of what is proved here is the core of a known result, stated precisely. That is the
+point rather than a disclaimer: knowing *which* result a file formalizes tells a reader
+where to find the parts that aren't formalized (chiefly the cost arguments).
+
+| File | Formalizes | Literature |
+| --- | --- | --- |
+| `Inventory.lean` | prime encoding of inventories; free commutative monoid ≅ `(ℕ₊, ×)` | Gödel's prime-exponent encoding (1931); the fundamental theorem of arithmetic stated as an isomorphism — standard algebra |
+| `ExactCover.lean` | `∏_{j∈J} bⱼ = T` ⟺ exact cover | the combinatorial core of **Subset Product**'s NP-completeness, by prime encoding from Exact Cover by 3-Sets. Garey & Johnson, *Computers and Intractability* (1979). Multiplicative analogue of Partition: **Product Partition**, Ng–Barketau–Cheng–Kovalyov (2010), *strongly* NP-complete |
+| — (not formalized) | the Euler-product generalization `∑_u e^{−sC(u)} = ∏_a (1 − e^{−sC(a)})⁻¹` | **Knopfmacher, *Abstract Analytic Number Theory* (1975)**: arithmetical semigroups with a norm map, Euler products, abstract prime number theorems. The essay's additive-cost identity is exactly this with `C = log‖·‖` |
+| `Matching.lean`, `Determinant.lean` | tagged determinant; coefficient of `z₁⋯zₙ` ⟺ 3D matching | the no-cancellation-via-distinct-tags device of the group-algebra / multilinear-detection family: Koutis (ICALP 2008), Williams (2009); Björklund's determinant sums for Hamiltonicity (FOCS 2010) |
+| `Complexity.lean`, `Enumeration.lean`, `Space.lean` | `P`, `NP`, `PSPACE`; `P ⊆ NP`; machines as finite data | textbook definitions; the model is Post–Turing over Mathlib's `Turing.Tape` |
+| `Oracle.lean`, `BGS.lean` | `∃ B, Pᴮ ≠ NPᴮ` | **Baker, Gill & Solovay**, *Relativizations of the P =? NP question*, SIAM J. Comput. (1975) |
+| `SelfReduction.lean` | greedy deletion: search reduces to decision | standard self-reducibility for NP-complete problems |
+
+### Adjacent literatures the essay is reaching toward
+
+- **Inventories as a computational model.** `ℕ₀^k` under addition is a *vector addition
+  system*; commutative-semigroup presentations are inventories with rewriting. The
+  complexity is known and large: the uniform word problem for finitely presented
+  commutative semigroups is **EXPSPACE-complete** (Mayr & Meyer, *Advances in Mathematics*,
+  1982), and Petri-net/VAS reachability — decidable since Mayr and Kosaraju in the early
+  1980s — was settled as **Ackermann-complete** in 2021 (Czerwiński & Orlikowski; Leroux;
+  upper bound Leroux & Schmitz). This is the closest thing to "the complexity of combining
+  ideas" having a definite answer.
+- **"Two copies ≠ one copy" is the contraction rule.** Dropping it is linear logic (Girard,
+  1987). The essay's `invMap_not_injective_of_idempotent` is the observation that
+  contraction collapses the counts `1` and `2`. Multiplicative linear logic provability is
+  NP-complete (Kanovich); full propositional linear logic is undecidable (Lincoln,
+  Mitchell, Scedrov & Shankar, 1992).
+- **"Ideas as typed programs with wires"** is string-diagram / monoidal-category theory
+  (Joyal & Street, *The geometry of tensor calculus*, 1991). "Counting boxes" is a monoidal
+  functor into `(ℕ^S, +)`, and the essay's worry about which distinctions survive a chosen
+  equivalence is the syntactic-vs-semantic question for free monoidal categories.
+
+### The barriers cited in `Conjecture.lean`
+
+- Relativization — Baker, Gill & Solovay (1975). **Proved here**, separating half.
+- Natural proofs — Razborov & Rudich, *Natural proofs*, JCSS (1997).
+- Algebrization — Aaronson & Wigderson, *Algebrization: a new barrier in complexity
+  theory* (STOC 2008 / ACM ToCT 2009).
+- Getting past them: Williams, *Nonuniform ACC circuit lower bounds* (CCC 2011 / JACM
+  2014) — non-relativizing, non-natural, non-algebrizing.
+
+### Directions discussed but not pursued here
+
+- **Algebraic complexity.** Valiant, *Completeness classes in algebra* (STOC 1979) for
+  `VP`/`VNP`; Nisan & Wigderson's partial-derivative method; Raz's superpolynomial lower
+  bounds for multilinear formulas; Limaye, Srinivasan & Tavenas (FOCS 2021) for
+  constant-depth algebraic circuits. Algebraic natural-proofs barriers also exist
+  (Grochow–Kumar–Saks–Saraf; Forbes–Shpilka–Volk). See
+  `notes/vp-vnp-statement-audit.md` for the 2026 `VP ≠ VNP` claim.
+- **Conditional optimality** of the `2ⁿ` coefficient extraction, via SETH / the Set Cover
+  Conjecture (Cygan et al., *On problems as hard as CNF-SAT*) and the `W[1]`-hardness of
+  multilinear monomial detection.
+- **Lifting theorems** for the "summaries lose information" line: Raz & McKenzie;
+  Göös, Pitassi & Watson.
+- **Directed two-linkage** NP-completeness, used in the companion write-up: Fortune,
+  Hopcroft & Wyllie, *The directed subgraph homeomorphism problem* (1980) — *not*
+  Chudnovsky–Scott–Seymour, which treats tournaments.
+
+### What is new here and what is not
+
+New: nothing mathematically. Every theorem in this repository is a formalization of
+something known, and in two places (`Inventory.lean`, `ExactCover.lean`) something very
+old. What the repository contributes is that these statements are now machine-checked, that
+`Determinant.coeff_det_ne_zero_iff` promotes a sketch to a theorem for all `n`, and that
+the gap between them and `P ≠ NP` is marked mechanically rather than described.
+
 ## Relation to `Primes_to_Two_Routes_Progress.md`
 
 That write-up covers the same starting material and then goes in a different direction
