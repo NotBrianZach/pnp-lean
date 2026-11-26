@@ -11,6 +11,81 @@ The project builds with exactly **two** warnings, both deliberate: the two `sorr
 the essay's general-`n` determinant criterion for three-dimensional matching, which is
 proved in full in `PvsNP/Determinant.lean`.
 
+## The starting intuition
+
+The seeding essay asks: *what is the least structure a theory of ideas needs in order to
+say that unlike things combine?* Its answer runs in four steps.
+
+**1. Inventories are arithmetic.** Label primitive kinds with primes. A recipe using two
+copies of `A`, one `B`, one `C` becomes `2²·3·5 = 60`: the integer records the entire
+inventory. Formally, finite inventories over a set `S` form the free commutative monoid
+`S →₀ ℕ`, and the prime encoding `E(u) = ∏ pₐ^{u a}` turns addition of inventories into
+multiplication of integers. Unique factorization makes it injective. So **any** system with
+an associative composition, an empty component, and countably many commuting primitives
+whose distinct finite inventories stay distinguishable contains a copy of `(ℕ₊, ×)`. That
+is a genuine structural lower bound, and it is the essay's core claim.
+
+**2. Structure is not yet computation.** `60` says what was used, never how it was
+combined: `x ↦ 2x` and `x ↦ x+1` compose differently in the two orders while sharing the
+inventory `6`, and all `n!` orders of `n` operations share one inventory. A computational
+claim needs a *task*.
+
+**3. The task: assemble an exact inventory from a catalog.** Give observation `i` the prime
+`pᵢ`, bundle `j` the product `bⱼ = ∏_{i ∈ Sⱼ} pᵢ`, and target `T = ∏ᵢ pᵢ`. Then
+`∏_{j∈J} bⱼ = T` holds exactly when every observation lies in precisely one selected
+bundle — Exact Cover, written arithmetically. The generating function
+`F(s) = ∏ⱼ(1 + bⱼ^{-s})` records every selection, and asking whether the coefficient of
+`T` is positive is the decision problem.
+
+**4. Where it gets hard, and the algebraic reformulation.** Restricted to pairs, exact
+coverage is bipartite matching, where an augmenting path repairs a partial solution and
+certifies progress. Add a third coordinate — colours — and the same repair can duplicate a
+colour and force another repair elsewhere. The minimal witness is a 2×2 square coloured
+red/blue on the diagonal and blue/red off it: every *pairwise* test passes, no full
+solution exists, and the determinant `r² − b²` exposes the obstruction through its missing
+`rb` term. In general, tagging each allowed triple and reading off the coefficient of
+`z₁⋯zₙ` in a determinant decides three-dimensional matching.
+
+The essay's own closing position is the accurate one: the structural claim is sound, and a
+computational claim begins only after a task is specified.
+
+## The approach taken here
+
+Proving `P ≠ NP` was the original ask and is not available — so the work is organised
+around separating three things that are easy to blur:
+
+1. **The provable core.** Every structural claim above is a theorem, and they are proved:
+   `Inventory.structural_lower_bound`, `ExactCover.prod_eq_target_iff`,
+   `Matching.pairwise_tests_insufficient`, and — for every `n`, where the essay has a
+   sketch — `Determinant.coeff_det_ne_zero_iff`.
+2. **A precise target.** `P ≠ NP` cannot be called open until it is stated. `P` and `NP`
+   are defined in `PvsNP/Complexity.lean` over nondeterministic Post-Turing machines, with
+   the modelling caveats written down rather than assumed.
+3. **An explicit gap.** The remaining distance is not a missing lemma. Three known barriers
+   rule out the argument shapes above; `PvsNP/Conjecture.lean` says which and why, and
+   `PvsNP/BGS.lean` promotes one of them — relativization — from citation to theorem.
+
+Three decisions shaped the result:
+
+- **`P` is defined as `NP` plus a determinism conjunct**, over one machine type. This makes
+  `P ⊆ NP` a one-line proof and avoids machine programming entirely. The cost is that
+  individual machines are expensive to *write*, which is why the remaining gaps
+  (NP-completeness of the arithmetic problem, `P ⊆ PSPACE`) all reduce to constructions
+  like "a machine that computes primes" or "a step counter". That is a design consequence,
+  not a mathematical obstruction.
+- **Machines are finite data** — states are `Fin size`, transitions are `Finset` tables.
+  Looks like tidying; is actually the precondition for `Countable NTM` and hence for every
+  diagonalisation in `Enumeration.lean`, `Oracle.lean` and `BGS.lean`.
+- **Runs record what they touched.** The `Run` relation carries the list of strings a
+  computation consulted. Introduced for oracle sensitivity, reused unchanged for the
+  pigeonhole, reused again for space. Each time it converts "what could the machine have
+  seen?" into a statement about a concrete finite list.
+
+Honesty is enforced mechanically rather than promised: `PvsNP/Audit.lean` wraps
+`#print axioms` in `#guard_msgs` for every headline result, so the build **fails** if any
+theorem's axiom dependencies change — including the assertions that the two conjecture
+statements *do* depend on `sorryAx`.
+
 ## Build
 
 ```bash
@@ -183,7 +258,7 @@ composition argument is explicitly a sketch ("a paper argument"), not among the
 machine-checked claims — the document says so, and its §9 is appropriately clear that
 P vs NP remains open.
 
-## Honest assessment of the starting intuition
+## Verdict: what the intuition was worth
 
 The inventory argument is sound and now formal, but it is a statement about *structure*,
 and it is independent of running time: `ℕ₊` under multiplication sits inside any system
